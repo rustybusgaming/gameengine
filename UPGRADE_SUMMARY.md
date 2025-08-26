@@ -109,17 +109,21 @@ gameengine/
 │   ├── LightingEngine.h  # Advanced lighting
 │   ├── AnimationSystem.h # Animation system
 │   ├── ParticleSystem.h  # Particle effects
+│   ├── AssetConverter.h  # Universal asset converter with Source engine support
 │   └── MotionControlSystem.h # Motion control
 ├── src/                  # Source files
 │   ├── graphics/         # Graphics implementation
 │   ├── physics/          # Physics implementation
-│   ├── ai/              # AI implementation
-│   ├── audio/           # Audio implementation
-│   ├── motion/          # Motion control
-│   └── core/            # Engine core
-├── shaders/             # HLSL shaders
-├── assets/              # Game assets
-└── build/               # Build output
+│   ├── ai/               # AI implementation
+│   ├── audio/            # Audio implementation
+│   ├── motion/           # Motion control
+│   ├── tools/            # Engine tools
+│   │   ├── asset_converter.cpp     # Asset converter command line interface
+│   │   └── AssetConverter.cpp      # Asset converter implementation
+│   └── core/             # Engine core
+├── shaders/              # HLSL shaders
+├── assets/               # Game assets
+└── build/                # Build output
 ```
 
 ## Next Steps
@@ -129,6 +133,7 @@ gameengine/
 4. **Performance optimization**: Profile and optimize critical paths
 5. **Documentation**: Create detailed API documentation
 6. **Platform expansion**: Add support for other platforms
+7. **Source engine compatibility**: Further develop the Source engine import tools
 
 ## Dependencies
 - **Windows SDK**: For DirectX 11 support
@@ -144,8 +149,9 @@ gameengine/
 ✅ Advanced lighting and shadows
 ✅ Animation system with IK
 ✅ GPU-accelerated particles
-✅3D audio system
+✅ 3D audio system
 ✅ Motion control system
 ✅ Engine integration complete
+✅ Source engine asset support added
 
 The Nexus Engine is now a modern, feature-rich game engine with DirectX 11 rendering and advanced gaming systems suitable for professional game development.

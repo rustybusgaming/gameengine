@@ -1,8 +1,55 @@
 #pragma once
 
 #include "Platform.h"
-#include <vector>
-#include <memory>
+#i    // Kinect-specific members
+    void* kinectSensor_;                    // IKinectSensor*
+    void* coordinateMapper_;                // ICoordinateMapper*
+    void* bodyFrameReader_;                 // IBodyFrameReader*
+    GestureRecognizer* gestureRecognizer_;
+    bool isInitialized_;
+    bool calibrationMode_;
+    float motionSensitivity_;
+    float aimingSmoothing_;
+    float gestureThreshold_;
+    
+    // Tracking robustness
+    unsigned int trackingErrorCount_;
+    unsigned int consecutiveTrackingFailures_;
+    float lastSuccessfulTrackingTime_;
+    bool isTrackingLost_;
+    std::vector<DirectX::XMFLOAT3> lastValidJoints_;
+    float trackingRecoveryTimeout_;
+    float trackingConfidenceThreshold_;
+    bool useJointPrediction_;
+    
+    // Constants
+    static constexpr unsigned int MAX_ERROR_THRESHOLD = 10;
+    static constexpr unsigned int MAX_TRACKING_FAILURES = 5;
+    
+    // Motion filter data
+    struct MotionFilterData {
+        int windowSize;
+        std::vector<DirectX::XMFLOAT3> positions;
+        std::vector<DirectX::XMFLOAT3> velocities;
+        std::vector<float> timestamps;
+        std::vector<float> weights;
+        DirectX::XMFLOAT3 filteredValue;
+    };
+    
+    // Tracking quality
+    TrackingQuality trackingQuality_;
+    bool trackingEnabled_;
+    unsigned int errorCount_;
+    
+    // Joint data
+    std::vector<std::vector<DirectX::XMFLOAT3>> jointHistory_;
+    std::vector<DirectX::XMFLOAT3> jointVelocities_;
+    
+    // Time tracking
+    float lastFrameTime_;
+    
+    // Skeletal constraints
+    std::vector<SkeletalConstraint> skeletalConstraints_;clude <memory>
 #include <map>
 #include <string>
 #include <functional>
@@ -39,8 +86,26 @@ enum class JointType {
     HandRight,
     HipLeft,
     KneeLeft,
-    AnkleLeft,
-    FootLeft,
+    AnkleLe    // Kinect-specific private members
+    void* kinectSensor_;                    // IKinectSensor*
+    void* coordinateMapper_;                // ICoordinateMapper*
+    void* bodyFrameReader_;                 // IBodyFrameReader*
+    GestureRecognizer* gestureRecognizer_;
+    bool isInitialized_;
+    bool calibrationMode_;
+    float motionSensitivity_;
+    float aimingSmoothing_;
+    float gestureThreshold_;
+    
+    // Tracking robustness
+    unsigned int trackingErrorCount_;
+    unsigned int consecutiveTrackingFailures_;
+    float lastSuccessfulTrackingTime_;
+    bool isTrackingLost_;
+    std::vector<DirectX::XMFLOAT3> lastValidJoints_;
+    float trackingRecoveryTimeout_;
+    float trackingConfidenceThreshold_;
+    bool useJointPrediction_;ootLeft,
     HipRight,
     KneeRight,
     AnkleRight,
@@ -421,7 +486,9 @@ public:
 
     // Initialization
     bool Initialize();
+    bool InitializeAdvanced(const std::string& configFile = "");
     void Shutdown();
+    bool Reset();
 
     // Device management
     bool DetectDevices();
@@ -527,6 +594,16 @@ public:
     void SetGestureThreshold(float threshold);
     void StopCalibration();
     bool IsCalibrating() const;
+    
+    // Advanced tracking and calibration methods
+    bool InitializeFallbackTracking();
+    void SetTrackingQuality(TrackingQuality quality);
+    void ConfigureFilteringByQuality(TrackingQuality quality);
+    void UpdateCalibrationRange(const DirectX::XMFLOAT3& head, 
+                              const DirectX::XMFLOAT3& rightHand, 
+                              const DirectX::XMFLOAT3& leftHand);
+    void FinalizeCalibration();
+    void AttemptSystemRecovery();
 
 private:
     // Device-specific implementations
@@ -542,6 +619,9 @@ private:
     DirectX::XMFLOAT3 ProcessGyroscope(const DirectX::XMFLOAT3& raw);
     DirectX::XMFLOAT4 ProcessOrientation(const DirectX::XMFLOAT4& raw);
     DirectX::XMFLOAT2 ConvertMotionToAiming(const DirectX::XMFLOAT3& motion);
+    void ApplyWeightedFiltering(DirectX::XMFLOAT3& position, float responsiveness);
+    void ApplyPredictiveFiltering(DirectX::XMFLOAT3& position);
+    void ApplyJitterReduction(DirectX::XMFLOAT3& position);
 
     // Gesture processing
     void UpdateGestureRecording();
@@ -584,10 +664,15 @@ private:
     void HandleWaveGesture(const RecognizedGesture& gesture);
     void DefineGesturePatterns();
     void ApplyMotionFiltering(DirectX::XMFLOAT3& motion);
+    void ApplySkeletalConstraints(std::vector<DirectX::XMFLOAT3>& joints);
     DirectX::XMFLOAT3 CalculateAimDirection(const DirectX::XMFLOAT3& handPosition);
     DirectX::XMFLOAT3 LerpVector3(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3& b, float t);
+    bool AttemptTrackingRecovery();
+    float CalculateJointConfidence(const DirectX::XMFLOAT3& current, const DirectX::XMFLOAT3& previous, float deltaTime);
     void UpdateMovementControls();
     void UpdateInteractionControls();
+    void HandleTrackingLoss();
+    bool ValidateJointPositions(const std::vector<DirectX::XMFLOAT3>& joints);
 
 private:
     // Device management
@@ -668,6 +753,22 @@ private:
     float lastUpdateTime_;
     float updateFrequency_;
     int frameCount_;
+    
+    // Skeletal constraint structure
+    struct SkeletalConstraint {
+        JointType jointA;
+        JointType jointB;
+        float minDistance;
+        float maxDistance;
+    };
+    
+    // Tracking quality enum
+    enum class TrackingQuality {
+        Low,
+        Medium,
+        High,
+        Ultra
+    };
     
     // Platform-specific data
 #ifdef _WIN32

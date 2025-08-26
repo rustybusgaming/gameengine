@@ -6,7 +6,7 @@ file(GLOB_RECURSE ALL_CPP_FILES "*.cpp")
 # Remove main files from library sources (they contain main functions)  
 set(MAIN_FILES 
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/main_simple.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/main_debug.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/texture_test.cpp"
 )
@@ -21,6 +21,20 @@ file(GLOB TOOL_SOURCES "tools/*.cpp")
 foreach(tool_file ${TOOL_SOURCES})
     list(REMOVE_ITEM NEXUS_LIB_SOURCES ${tool_file})
 endforeach()
+
+# Add tool executables
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_converter.cpp")
+    add_executable(NexusAssetConverter tools/asset_converter.cpp tools/AssetConverter.cpp)
+    target_include_directories(NexusAssetConverter PRIVATE 
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/include
+    )
+    target_link_libraries(NexusAssetConverter NexusCore)
+    set_target_properties(NexusAssetConverter PROPERTIES
+        OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    message(STATUS "Created NexusAssetConverter tool")
+endif()
 
 list(LENGTH NEXUS_LIB_SOURCES NUM_SOURCES)
 message(STATUS "Building NexusCore with ${NUM_SOURCES} source files")
