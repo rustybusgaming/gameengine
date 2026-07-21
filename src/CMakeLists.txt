@@ -77,6 +77,10 @@ if(ASSIMP_FOUND)
     endif()
 endif()
 
+if(TARGET NexusImGui)
+    target_link_libraries(NexusCore PUBLIC NexusImGui)
+endif()
+
 target_compile_definitions(NexusCore
     PUBLIC
         NEXUS_STATIC_BUILD
@@ -150,3 +154,4 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
 
 message(STATUS "NexusCore library configured successfully")
+

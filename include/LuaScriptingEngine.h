@@ -6,6 +6,9 @@ extern "C" {
 #include <lauxlib.h>
 #include <lualib.h>
 }
+#else
+struct lua_State;
+using lua_CFunction = int (*)(lua_State*);
 #endif
 
 #include <memory>
@@ -79,11 +82,7 @@ private:
     bool initialized_;
     bool hotReloadEnabled_;
     
-#ifdef NEXUS_LUA_ENABLED
-    lua_State* L_;
-#else
-    void* L_; // Placeholder when Lua is disabled
-#endif
+lua_State* L_;
     
     std::map<std::string, std::function<void()>> eventCallbacks_;
     std::map<std::string, long long> scriptModTimes_;

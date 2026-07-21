@@ -51,7 +51,38 @@ endif()
 
 if(ENABLE_IMGUI AND EXISTS "${THIRD_PARTY_DIR}/imgui/imgui.h")
     set(IMGUI_FOUND TRUE)
-    list(APPEND NEXUS_THIRD_PARTY_INCLUDE_DIRS "${THIRD_PARTY_DIR}/imgui")
+    list(APPEND NEXUS_THIRD_PARTY_INCLUDE_DIRS
+        "${THIRD_PARTY_DIR}"
+        "${THIRD_PARTY_DIR}/imgui"
+        "${THIRD_PARTY_DIR}/imgui/backends"
+        "${THIRD_PARTY_DIR}/imgui/misc/cpp"
+    )
+
+    set(NEXUS_IMGUI_SOURCES
+        "${THIRD_PARTY_DIR}/imgui/imgui.cpp"
+        "${THIRD_PARTY_DIR}/imgui/imgui_draw.cpp"
+        "${THIRD_PARTY_DIR}/imgui/imgui_tables.cpp"
+        "${THIRD_PARTY_DIR}/imgui/imgui_widgets.cpp"
+        "${THIRD_PARTY_DIR}/imgui/misc/cpp/imgui_stdlib.cpp"
+    )
+
+    if(WIN32)
+        list(APPEND NEXUS_IMGUI_SOURCES
+            "${THIRD_PARTY_DIR}/imgui/backends/imgui_impl_win32.cpp"
+            "${THIRD_PARTY_DIR}/imgui/backends/imgui_impl_dx11.cpp"
+        )
+    endif()
+
+    add_library(NexusImGui STATIC ${NEXUS_IMGUI_SOURCES})
+    target_include_directories(NexusImGui PUBLIC
+        "${THIRD_PARTY_DIR}/imgui"
+        "${THIRD_PARTY_DIR}/imgui/backends"
+        "${THIRD_PARTY_DIR}/imgui/misc/cpp"
+    )
+
+    if(WIN32)
+        target_link_libraries(NexusImGui PUBLIC d3d11.lib user32.lib gdi32.lib dwmapi.lib)
+    endif()
 else()
     set(IMGUI_FOUND FALSE)
 endif()
@@ -357,3 +388,4 @@ message(STATUS "Console Platforms: ${ENABLE_CONSOLE_PLATFORMS}")
 message(STATUS "Examples: ${ENABLE_EXAMPLES}")
 message(STATUS "Tools: ${NEXUS_BUILD_TOOLS}")
 message(STATUS "==========================================")
+
