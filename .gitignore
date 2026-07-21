@@ -379,3 +379,12 @@ performance_*
 *.ini.bak
 *.cfg.bak
 *.conf.bak
+
+# API credentials and local configuration
+2.bat
+dxdiag_output.txt
+
+# Test files in root
+debug_test.cpp
+test_engine.cpp
+texture_test.cpp

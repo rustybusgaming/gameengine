@@ -2,8 +2,8 @@
 @echo off
 echo Setting up Nexus Engine third-party dependencies...
 
-mkdir third_party 2>nul
-cd third_party
+mkdir thirdparty 2>nul
+cd thirdparty
 
 echo Downloading core dependencies...
 
@@ -38,6 +38,6 @@ echo    2. Lua: https://www.lua.org/download.html
 echo    3. FMOD: https://www.fmod.com/download
 echo    4. NVIDIA PhysX: https://github.com/NVIDIA-Omniverse/PhysX
 echo.
-echo 📁 Extract them to the corresponding folders in third_party/
+echo 📁 Extract them to the corresponding folders in thirdparty/
 echo.
 pause

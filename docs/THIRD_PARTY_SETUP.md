@@ -2,10 +2,10 @@
 
 ## 📁 Third-Party Folder Structure
 
-Create the following folder structure in your `g:\code\gameengine\third_party` directory:
+Create the following folder structure in your `thirdparty` directory:
 
 ```
-third_party/
+thirdparty/
 ├── bullet3/                    # Bullet Physics Engine
 ├── lua/                        # Lua Scripting Language
 ├── physx/                      # NVIDIA PhysX Physics
@@ -27,79 +27,79 @@ third_party/
 ### 1. BULLET PHYSICS (Required)
 **Download:** https://github.com/bulletphysics/bullet3/releases/latest
 - File: `bullet3-X.X.zip` (latest version)
-- Extract to: `third_party/bullet3/`
+- Extract to: `thirdparty/bullet3/`
 - License: zlib License
 
 ### 2. LUA SCRIPTING (Required)
 **Download:** https://www.lua.org/download.html
 - File: `lua-5.4.7.tar.gz` (or latest 5.4.x)
-- Extract to: `third_party/lua/`
+- Extract to: `thirdparty/lua/`
 - Windows Binaries: https://luabinaries.sourceforge.net/download.html
 - License: MIT License
 
 ### 3. NVIDIA PHYSX (Optional - for advanced physics)
 **Download:** https://github.com/NVIDIA-Omniverse/PhysX/releases
 - File: Latest PhysX SDK
-- Extract to: `third_party/physx/`
+- Extract to: `thirdparty/physx/`
 - License: BSD 3-Clause
 
 ### 4. DEAR IMGUI (Required for UI)
 **Download:** https://github.com/ocornut/imgui/releases/latest
 - File: `imgui-X.X.zip`
-- Extract to: `third_party/imgui/`
+- Extract to: `thirdparty/imgui/`
 - License: MIT License
 
 ### 5. FMOD AUDIO ENGINE (Optional - Professional Audio)
 **Download:** https://www.fmod.com/download
 - File: FMOD Engine (Windows)
-- Extract to: `third_party/fmod/`
+- Extract to: `thirdparty/fmod/`
 - License: FMOD License (Free for non-commercial)
 
 ### 6. ASSIMP MODEL LOADER
 **Download:** https://github.com/assimp/assimp/releases/latest
 - File: `assimp-X.X.X-windows-msvc-X.zip`
-- Extract to: `third_party/assimp/`
+- Extract to: `thirdparty/assimp/`
 - License: BSD 3-Clause
 
 ### 7. PYBIND11 (Required for Python support)
 **Download:** https://github.com/pybind/pybind11/releases/latest
 - File: `pybind11-X.X.X.zip`
-- Extract to: `third_party/pybind11/`
+- Extract to: `thirdparty/pybind11/`
 - License: BSD-style
 
 ### 8. STB LIBRARIES (Required for texture loading)
 **Download:** https://github.com/nothings/stb
-- Clone entire repo to: `third_party/stb/`
+- Clone entire repo to: `thirdparty/stb/`
 - License: MIT License / Public Domain
 
 ### 9. RAPIDJSON (Required for configuration)
 **Download:** https://github.com/Tencent/rapidjson/releases/latest
 - File: `rapidjson-X.X.X.zip`
-- Extract to: `third_party/rapidjson/`
+- Extract to: `thirdparty/rapidjson/`
 - License: MIT License
 
 ### 10. DIRECTX TOOLKIT (Recommended)
 **Download:** https://github.com/Microsoft/DirectXTK/releases/latest
 - File: `DirectXTK_Desktop_202X_XX_XX.zip`
-- Extract to: `third_party/directxtk/`
+- Extract to: `thirdparty/directxtk/`
 - License: MIT License
 
 ### 11. NVIDIA RTX SDK (Optional - for ray tracing)
 **Download:** https://developer.nvidia.com/rtx/ray-tracing/rtxgi
 - Requires NVIDIA Developer account
-- Extract to: `third_party/rtx/`
+- Extract to: `thirdparty/rtx/`
 - License: NVIDIA Software License
 
 ### 12. AUDIOKINETIC WWISE (Optional - Professional Audio)
 **Download:** https://www.audiokinetic.com/download/
 - File: Wwise SDK
-- Extract to: `third_party/wwise/`
+- Extract to: `thirdparty/wwise/`
 - License: Audiokinetic License
 
 ### 13. STEAM AUDIO (Optional - Spatial Audio)
 **Download:** https://github.com/ValveSoftware/steam-audio/releases
 - File: Latest Steam Audio SDK
-- Extract to: `third_party/steamaudio/`
+- Extract to: `thirdparty/steamaudio/`
 - License: Apache 2.0
 
 ## 🚀 QUICK SETUP BATCH SCRIPT
@@ -157,7 +157,7 @@ Add this to your main `CMakeLists.txt`:
 
 ```cmake
 # Set third-party directory
-set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/third_party)
+set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/thirdparty)
 
 # Find packages
 find_package(Bullet QUIET PATHS ${THIRD_PARTY_DIR}/bullet3)
