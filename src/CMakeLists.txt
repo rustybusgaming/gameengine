@@ -1,88 +1,151 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Find all existing source files
-file(GLOB_RECURSE ALL_CPP_FILES "*.cpp")
+file(GLOB_RECURSE ALL_CPP_FILES CONFIGURE_DEPENDS "*.cpp")
 
-# Remove main files from library sources (they contain main functions)  
-set(MAIN_FILES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/main_debug.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/texture_test.cpp"
-)
+set(NEXUS_LIB_SOURCES)
+set(NEXUS_EXCLUDED_SOURCES)
 
-set(NEXUS_LIB_SOURCES ${ALL_CPP_FILES})
-foreach(main_file ${MAIN_FILES})
-    list(REMOVE_ITEM NEXUS_LIB_SOURCES ${main_file})
+foreach(source_file IN LISTS ALL_CPP_FILES)
+    get_filename_component(source_name "${source_file}" NAME)
+    get_filename_component(source_dir "${source_file}" DIRECTORY)
+    set(exclude_source FALSE)
+
+    if(source_name MATCHES "^(main|main_debug|main_simple|texture_test)\\.cpp$")
+        set(exclude_source TRUE)
+    elseif(source_name MATCHES "(_backup|_clean|_fixed|_stub)\\.cpp$")
+        set(exclude_source TRUE)
+    elseif(source_dir STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/tools")
+        set(exclude_source TRUE)
+    endif()
+
+    if(exclude_source)
+        list(APPEND NEXUS_EXCLUDED_SOURCES "${source_file}")
+    else()
+        list(APPEND NEXUS_LIB_SOURCES "${source_file}")
+    endif()
 endforeach()
-
-# Remove tool sources from library (they have their own main functions)
-file(GLOB TOOL_SOURCES "tools/*.cpp")
-foreach(tool_file ${TOOL_SOURCES})
-    list(REMOVE_ITEM NEXUS_LIB_SOURCES ${tool_file})
-endforeach()
-
-# Add tool executables
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_converter.cpp")
-    add_executable(NexusAssetConverter tools/asset_converter.cpp tools/AssetConverter.cpp)
-    target_include_directories(NexusAssetConverter PRIVATE 
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_BINARY_DIR}/include
-    )
-    target_link_libraries(NexusAssetConverter NexusCore)
-    set_target_properties(NexusAssetConverter PROPERTIES
-        OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    )
-    message(STATUS "Created NexusAssetConverter tool")
-endif()
 
 list(LENGTH NEXUS_LIB_SOURCES NUM_SOURCES)
+list(LENGTH NEXUS_EXCLUDED_SOURCES NUM_EXCLUDED_SOURCES)
 message(STATUS "Building NexusCore with ${NUM_SOURCES} source files")
+message(STATUS "Excluded ${NUM_EXCLUDED_SOURCES} alternate/tool source files from NexusCore")
 
-# Create the main engine library
 add_library(NexusCore STATIC ${NEXUS_LIB_SOURCES})
 
-target_include_directories(NexusCore PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_BINARY_DIR}/include
+target_include_directories(NexusCore
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/include
+        ${NEXUS_THIRD_PARTY_INCLUDE_DIRS}
 )
 
-# Link required Windows libraries
-target_link_libraries(NexusCore
-    d3d11.lib dxgi.lib d3dcompiler.lib
-    dinput8.lib dxguid.lib dsound.lib winmm.lib
-    user32.lib gdi32.lib shell32.lib ole32.lib oleaut32.lib
-    uuid.lib comdlg32.lib advapi32.lib psapi.lib pdh.lib
-    comctl32.lib kernel32.lib ws2_32.lib setupapi.lib version.lib
+if(BULLET_FOUND)
+    target_include_directories(NexusCore PUBLIC ${BULLET_INCLUDE_DIRS})
+    target_link_libraries(NexusCore PUBLIC ${BULLET_LIBRARIES})
+endif()
+
+if(NEXUS_LUA_ENABLED)
+    target_include_directories(NexusCore PUBLIC ${LUA_INCLUDE_DIR})
+    target_link_libraries(NexusCore PUBLIC ${LUA_LIBRARIES})
+endif()
+
+if(NEXUS_PYTHON_ENABLED)
+    target_include_directories(NexusCore PUBLIC ${Python3_INCLUDE_DIRS})
+    if(TARGET Python3::Python)
+        target_link_libraries(NexusCore PUBLIC Python3::Python)
+    else()
+        target_link_libraries(NexusCore PUBLIC ${Python3_LIBRARIES})
+    endif()
+endif()
+
+if(PHYSX_FOUND)
+    target_include_directories(NexusCore PUBLIC ${PHYSX_INCLUDE_DIRS})
+    target_link_libraries(NexusCore PUBLIC ${PHYSX_LIBRARIES})
+endif()
+
+if(FMOD_FOUND)
+    target_include_directories(NexusCore PUBLIC ${FMOD_INCLUDE_DIRS})
+    target_link_libraries(NexusCore PUBLIC ${FMOD_LIBRARIES})
+endif()
+
+if(ASSIMP_FOUND)
+    if(TARGET assimp::assimp)
+        target_link_libraries(NexusCore PUBLIC assimp::assimp)
+    else()
+        target_include_directories(NexusCore PUBLIC ${ASSIMP_INCLUDE_DIRS})
+        target_link_libraries(NexusCore PUBLIC ${ASSIMP_LIBRARIES})
+    endif()
+endif()
+
+target_compile_definitions(NexusCore
+    PUBLIC
+        NEXUS_STATIC_BUILD
+        $<$<BOOL:${NEXUS_PYTHON_ENABLED}>:NEXUS_PYTHON_ENABLED>
+        $<$<BOOL:${NEXUS_LUA_ENABLED}>:NEXUS_LUA_ENABLED>
+        $<$<BOOL:${NEXUS_BULLET_PHYSICS_ENABLED}>:NEXUS_BULLET_PHYSICS_ENABLED>
+        $<$<BOOL:${NEXUS_PHYSX_ENABLED}>:NEXUS_PHYSX_ENABLED>
+        $<$<BOOL:${NEXUS_FMOD_ENABLED}>:NEXUS_FMOD_ENABLED>
+        $<$<BOOL:${NEXUS_ASSIMP_ENABLED}>:NEXUS_ASSIMP_ENABLED>
+        $<$<BOOL:${NEXUS_IMGUI_ENABLED}>:NEXUS_IMGUI_ENABLED>
+        $<$<BOOL:${NEXUS_ADVANCED_RENDERING_ENABLED}>:NEXUS_ADVANCED_RENDERING_ENABLED>
+        $<$<BOOL:${NEXUS_RAY_TRACING_ENABLED}>:NEXUS_RAY_TRACING_ENABLED>
+        $<$<BOOL:${NEXUS_VR_ENABLED}>:NEXUS_VR_ENABLED>
+        $<$<BOOL:${NEXUS_NETWORKING_ENABLED}>:NEXUS_NETWORKING_ENABLED>
+        $<$<BOOL:${NEXUS_C_API_ENABLED}>:NEXUS_C_API_ENABLED>
+        $<$<BOOL:${NEXUS_GAME_IMPORTERS_ENABLED}>:NEXUS_GAME_IMPORTERS_ENABLED>
+        $<$<BOOL:${NEXUS_CONSOLE_PLATFORMS_ENABLED}>:NEXUS_CONSOLE_PLATFORMS_ENABLED>
 )
 
-# Set target properties
+if(WIN32)
+    target_compile_definitions(NexusCore
+        PUBLIC
+            NEXUS_PLATFORM_WINDOWS
+            NOMINMAX
+            WIN32_LEAN_AND_MEAN
+            UNICODE
+            _UNICODE
+    )
+
+    target_link_libraries(NexusCore
+        PUBLIC
+            d3d11.lib dxgi.lib d3dcompiler.lib
+            dinput8.lib dxguid.lib dsound.lib winmm.lib
+            user32.lib gdi32.lib shell32.lib ole32.lib oleaut32.lib
+            uuid.lib comdlg32.lib advapi32.lib psapi.lib pdh.lib
+            comctl32.lib kernel32.lib ws2_32.lib setupapi.lib version.lib
+    )
+else()
+    message(WARNING "NexusCore currently targets Windows/DirectX. Non-Windows builds may require platform stubs.")
+endif()
+
 set_target_properties(NexusCore PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )
 
-# Platform-specific compilation flags
-if(WIN32)
-    target_compile_definitions(NexusCore PRIVATE 
-        NEXUS_PLATFORM_WINDOWS
-        NOMINMAX WIN32_LEAN_AND_MEAN
-        UNICODE _UNICODE
-    )
-endif()
-
-# Create main executable if main.cpp exists
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
     add_executable(NexusEngine main.cpp)
-    target_link_libraries(NexusEngine NexusCore)
+    target_link_libraries(NexusEngine PRIVATE NexusCore)
     set_target_properties(NexusEngine PROPERTIES
-        OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
     message(STATUS "Created NexusEngine executable")
 endif()
 
-# Create directories
+if(NEXUS_BUILD_TOOLS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_converter.cpp")
+    add_executable(NexusAssetConverter tools/asset_converter.cpp tools/AssetConverter.cpp)
+    target_link_libraries(NexusAssetConverter PRIVATE NexusCore)
+    target_include_directories(NexusAssetConverter PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/include
+    )
+    set_target_properties(NexusAssetConverter PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    message(STATUS "Created NexusAssetConverter tool")
+endif()
+
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
 
