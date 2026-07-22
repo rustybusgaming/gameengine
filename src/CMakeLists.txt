@@ -116,6 +116,10 @@ endif()
 
 if(NEXUS_OPENGL_ENABLED)
     target_link_libraries(NexusCore PUBLIC OpenGL::GL)
+    if(TARGET glad)
+        target_link_libraries(NexusCore PUBLIC glad)
+        message(STATUS "Linked GLAD library to NexusCore")
+    endif()
 endif()
 
 target_compile_definitions(NexusCore

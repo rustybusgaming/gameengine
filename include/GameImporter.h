@@ -27,6 +27,7 @@ public:
         Unity,
         UnrealEngine,
         Godot,
+        SourceEngine,      // Valve Source Engine (Half-Life 2, Portal, CS:GO, etc.)
         Unknown
     };
 
@@ -92,16 +93,19 @@ public:
     ImportResult ImportUnityProject(const std::string& projectPath, const ImportSettings& settings);
     ImportResult ImportUnrealProject(const std::string& projectPath, const ImportSettings& settings);
     ImportResult ImportGodotProject(const std::string& projectPath, const ImportSettings& settings);
+    ImportResult ImportSourceEngineGame(const std::string& gamePath, const ImportSettings& settings);
 
     // Asset Conversion
     bool ConvertUnityScene(const std::string& sceneFile, const std::string& outputPath, const ImportSettings& settings);
     bool ConvertUnrealLevel(const std::string& levelFile, const std::string& outputPath, const ImportSettings& settings);
     bool ConvertGodotScene(const std::string& sceneFile, const std::string& outputPath, const ImportSettings& settings);
+    bool ConvertSourceEngineMap(const std::string& mapFile, const std::string& outputPath, const ImportSettings& settings);
 
     // Material Conversion
     bool ConvertUnityMaterial(const std::string& materialFile, const std::string& outputPath);
     bool ConvertUnrealMaterial(const std::string& materialFile, const std::string& outputPath);
     bool ConvertGodotMaterial(const std::string& materialFile, const std::string& outputPath);
+    bool ConvertSourceEngineMaterial(const std::string& vmtFile, const std::string& outputPath);
 
     // Script Conversion
     bool ConvertUnityScript(const std::string& scriptFile, const std::string& outputPath, const ImportSettings& settings);
