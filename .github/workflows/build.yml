@@ -30,6 +30,10 @@ jobs:
         .\setup_dependencies.bat
       shell: cmd
 
+    - name: Install Python Bindings Dependencies
+      run: python -m pip install pybind11
+      shell: powershell
+
     - name: Configure CMake
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_VULKAN=ON -DENABLE_DIRECTX11=ON -DENABLE_OPENGL=OFF
@@ -63,7 +67,7 @@ jobs:
           libsdl2-dev \
           libvulkan-dev \
           vulkan-tools \
-          vulkan-validationlayers-dev \
+          vulkan-utility-libraries-dev \
           spirv-tools \
           libgl1-mesa-dev \
           libglu1-mesa-dev
@@ -72,6 +76,9 @@ jobs:
       run: |
         chmod +x setup_dependencies.sh
         ./setup_dependencies.sh
+
+    - name: Install Python Bindings Dependencies
+      run: pip3 install pybind11 --break-system-packages
 
     - name: Configure CMake
       run: |
@@ -103,6 +110,9 @@ jobs:
       run: |
         chmod +x setup_dependencies.sh
         ./setup_dependencies.sh
+
+    - name: Install Python Bindings Dependencies
+      run: pip3 install pybind11 --break-system-packages
 
     - name: Configure CMake
       run: |
