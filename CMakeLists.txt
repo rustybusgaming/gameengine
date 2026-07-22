@@ -35,6 +35,12 @@ option(ENABLE_CONSOLE_PLATFORMS "Enable console platform support" ON)
 option(ENABLE_EXAMPLES "Enable example projects" OFF)
 option(NEXUS_BUILD_TOOLS "Build Nexus command-line tools" ON)
 
+option(ENABLE_VULKAN "Enable Vulkan rendering backend" ON)
+option(ENABLE_OPENGL "Enable OpenGL rendering backend" ON)
+option(ENABLE_DIRECTX11 "Enable DirectX 11 rendering backend" ON)
+set(NEXUS_DEFAULT_GRAPHICS_API "Vulkan" CACHE STRING "Default graphics API (Vulkan, OpenGL, DirectX11)")
+set_property(CACHE NEXUS_DEFAULT_GRAPHICS_API PROPERTY STRINGS "Vulkan" "OpenGL" "DirectX11")
+
 set(NEXUS_THIRD_PARTY_INCLUDE_DIRS)
 
 if(EXISTS "${THIRD_PARTY_DIR}/stb")
@@ -141,6 +147,106 @@ if(ENABLE_BULLET_PHYSICS)
         set(BULLET_LIBRARIES BulletDynamics BulletCollision LinearMath)
     else()
         message(STATUS "Bullet Physics not found - using basic physics")
+    endif()
+endif()
+
+set(SDL2_SEARCH_PATHS
+    "${THIRD_PARTY_DIR}/SDL2"
+    "${CMAKE_SOURCE_DIR}/third_party/SDL2"
+    "$ENV{SDL2_DIR}"
+    "C:/SDL2"
+)
+
+set(SDL2_FOUND FALSE)
+foreach(search_path IN LISTS SDL2_SEARCH_PATHS)
+    if(search_path AND EXISTS "${search_path}/include/SDL.h")
+        set(SDL2_INCLUDE_DIR "${search_path}/include")
+        if(WIN32)
+            find_library(SDL2_LIBRARY
+                NAMES SDL2
+                PATHS "${search_path}/lib" "${search_path}/lib/x64"
+                NO_DEFAULT_PATH
+            )
+            find_library(SDL2MAIN_LIBRARY
+                NAMES SDL2main
+                PATHS "${search_path}/lib" "${search_path}/lib/x64"
+                NO_DEFAULT_PATH
+            )
+        else()
+            find_library(SDL2_LIBRARY
+                NAMES SDL2
+                PATHS "${search_path}/lib"
+                NO_DEFAULT_PATH
+            )
+        endif()
+        if(SDL2_LIBRARY)
+            set(SDL2_FOUND TRUE)
+            set(SDL2_LIBRARIES ${SDL2_LIBRARY})
+            if(WIN32 AND SDL2MAIN_LIBRARY)
+                list(APPEND SDL2_LIBRARIES ${SDL2MAIN_LIBRARY})
+            endif()
+            message(STATUS "Found SDL2 at: ${search_path}")
+            message(STATUS "  SDL2 include: ${SDL2_INCLUDE_DIR}")
+            message(STATUS "  SDL2 libraries: ${SDL2_LIBRARIES}")
+            break()
+        endif()
+    endif()
+endforeach()
+
+if(NOT SDL2_FOUND)
+    find_package(SDL2 QUIET)
+    if(SDL2_FOUND)
+        message(STATUS "Found SDL2 via system package manager")
+    endif()
+endif()
+
+if(NOT SDL2_FOUND)
+    message(WARNING "SDL2 not found - windowing will be limited to platform-specific code")
+    message(WARNING "Run setup_dependencies.bat (Windows) or setup_dependencies.sh (Linux/macOS)")
+endif()
+
+if(ENABLE_VULKAN)
+    # Check thirdparty folder first
+    set(VULKAN_SEARCH_PATHS
+        "${THIRD_PARTY_DIR}/vulkan"
+        "${CMAKE_SOURCE_DIR}/third_party/vulkan"
+    )
+
+    set(VULKAN_FOUND FALSE)
+    foreach(search_path IN LISTS VULKAN_SEARCH_PATHS)
+        if(EXISTS "${search_path}/include/vulkan/vulkan.h")
+            set(Vulkan_INCLUDE_DIRS "${search_path}/include")
+            set(VULKAN_FOUND TRUE)
+            message(STATUS "Found Vulkan headers at: ${search_path}")
+            message(STATUS "  Note: Using headers only. Install full Vulkan SDK for validation layers and tools.")
+            break()
+        endif()
+    endforeach()
+
+    # Try system Vulkan SDK if not found in thirdparty
+    if(NOT VULKAN_FOUND)
+        find_package(Vulkan QUIET)
+        if(Vulkan_FOUND)
+            message(STATUS "Found Vulkan SDK: ${Vulkan_INCLUDE_DIRS}")
+            set(VULKAN_FOUND TRUE)
+        endif()
+    endif()
+
+    if(NOT VULKAN_FOUND)
+        message(STATUS "Vulkan not found - Vulkan backend disabled")
+        message(STATUS "  Run setup_dependencies.bat/sh or install Vulkan SDK from https://vulkan.lunarg.com/")
+        set(ENABLE_VULKAN OFF)
+    endif()
+endif()
+
+if(ENABLE_OPENGL)
+    find_package(OpenGL QUIET)
+    if(OPENGL_FOUND)
+        message(STATUS "Found OpenGL")
+        set(OPENGL_FOUND TRUE)
+    else()
+        message(STATUS "OpenGL not found - OpenGL backend disabled")
+        set(ENABLE_OPENGL OFF)
     endif()
 endif()
 
@@ -333,6 +439,22 @@ set(NEXUS_C_API_ENABLED ${ENABLE_C_API})
 set(NEXUS_GAME_IMPORTERS_ENABLED ${ENABLE_GAME_IMPORTERS})
 set(NEXUS_CONSOLE_PLATFORMS_ENABLED ${ENABLE_CONSOLE_PLATFORMS})
 
+set(NEXUS_SDL2_ENABLED ${SDL2_FOUND})
+set(NEXUS_VULKAN_ENABLED FALSE)
+if(ENABLE_VULKAN AND VULKAN_FOUND)
+    set(NEXUS_VULKAN_ENABLED TRUE)
+endif()
+
+set(NEXUS_OPENGL_ENABLED FALSE)
+if(ENABLE_OPENGL AND OPENGL_FOUND)
+    set(NEXUS_OPENGL_ENABLED TRUE)
+endif()
+
+set(NEXUS_DIRECTX11_ENABLED FALSE)
+if(ENABLE_DIRECTX11 AND WIN32)
+    set(NEXUS_DIRECTX11_ENABLED TRUE)
+endif()
+
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/include")
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/include/EngineConfig.h.in")
@@ -380,6 +502,12 @@ message(STATUS "NVIDIA PhysX: ${NEXUS_PHYSX_ENABLED}")
 message(STATUS "FMOD Audio: ${NEXUS_FMOD_ENABLED}")
 message(STATUS "Assimp: ${NEXUS_ASSIMP_ENABLED}")
 message(STATUS "ImGui: ${NEXUS_IMGUI_ENABLED}")
+message(STATUS "SDL2: ${NEXUS_SDL2_ENABLED}")
+message(STATUS "Graphics APIs:")
+message(STATUS "  Vulkan: ${NEXUS_VULKAN_ENABLED}")
+message(STATUS "  OpenGL: ${NEXUS_OPENGL_ENABLED}")
+message(STATUS "  DirectX 11: ${NEXUS_DIRECTX11_ENABLED}")
+message(STATUS "  Default API: ${NEXUS_DEFAULT_GRAPHICS_API}")
 message(STATUS "Advanced Rendering: ${ENABLE_ADVANCED_RENDERING}")
 message(STATUS "Ray Tracing: ${ENABLE_RAY_TRACING}")
 message(STATUS "VR Support: ${ENABLE_VR_SUPPORT}")

@@ -32,6 +32,14 @@
 #cmakedefine NEXUS_GAME_IMPORTERS_ENABLED
 #cmakedefine NEXUS_CONSOLE_PLATFORMS_ENABLED
 
+// Graphics API support
+#cmakedefine NEXUS_SDL2_ENABLED
+#cmakedefine NEXUS_VULKAN_ENABLED
+#cmakedefine NEXUS_OPENGL_ENABLED
+#cmakedefine NEXUS_DIRECTX11_ENABLED
+
+#define NEXUS_DEFAULT_GRAPHICS_API "@NEXUS_DEFAULT_GRAPHICS_API@"
+
 // Debug features
 #ifdef _DEBUG
     #define NEXUS_DEBUG 1
@@ -70,13 +78,6 @@
 #else
     #define NEXUS_FORCE_INLINE inline
     #define NEXUS_NO_INLINE
-#endif
-
-// DirectX version support
-#define NEXUS_DIRECTX_11_ENABLED 1
-#ifdef NEXUS_RAY_TRACING_ENABLED
-    #define NEXUS_DIRECTX_12_ENABLED 1
-    #define NEXUS_DXR_ENABLED 1
 #endif
 
 // Memory alignment

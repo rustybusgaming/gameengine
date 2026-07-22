@@ -321,6 +321,10 @@ thirdparty/*/build/
 thirdparty/downloads/
 thirdparty/temp/
 
+# Downloaded dependencies (run setup_dependencies script to get these)
+thirdparty/SDL2/
+thirdparty/vulkan/
+
 # Keep important third party files
 !thirdparty/*/include/
 !thirdparty/*/LICENSE*
@@ -383,8 +387,52 @@ performance_*
 # API credentials and local configuration
 2.bat
 dxdiag_output.txt
+12.bat
 
 # Test files in root
 debug_test.cpp
 test_engine.cpp
 texture_test.cpp
+
+###################
+# GitHub Actions
+###################
+.github/workflows/*.log
+
+###################
+# IDE and Editor
+###################
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Rider
+.idea/
+
+# Emacs
+*~
+\#*\#
+
+# Vim
+*.swp
+*.swo
+
+###################
+# CI/CD Artifacts
+###################
+artifacts/
+dist/
+*.zip
+*.tar.gz
+*.deb
+*.rpm
+
+###################
+# Local Settings
+###################
+.env
+.env.local
+local.properties
+cmake_local.cmake

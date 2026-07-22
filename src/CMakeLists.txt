@@ -81,6 +81,43 @@ if(TARGET NexusImGui)
     target_link_libraries(NexusCore PUBLIC NexusImGui)
 endif()
 
+if(SDL2_FOUND)
+    target_include_directories(NexusCore PUBLIC ${SDL2_INCLUDE_DIR})
+    target_link_libraries(NexusCore PUBLIC ${SDL2_LIBRARIES})
+endif()
+
+if(NEXUS_VULKAN_ENABLED)
+    target_include_directories(NexusCore PUBLIC ${Vulkan_INCLUDE_DIRS})
+    if(TARGET Vulkan::Vulkan)
+        target_link_libraries(NexusCore PUBLIC Vulkan::Vulkan)
+    else()
+        # Headers only - need to link vulkan-1 manually on Windows
+        if(WIN32)
+            # Try to find vulkan-1.lib in system paths or SDK
+            find_library(VULKAN_LIBRARY vulkan-1
+                PATHS "$ENV{VULKAN_SDK}/Lib"
+                      "C:/VulkanSDK/*/Lib"
+                PATH_SUFFIXES x64 x86_64
+            )
+            if(VULKAN_LIBRARY)
+                target_link_libraries(NexusCore PUBLIC ${VULKAN_LIBRARY})
+                message(STATUS "Linked Vulkan library: ${VULKAN_LIBRARY}")
+            else()
+                message(WARNING "Vulkan headers found but vulkan-1.lib not found. Install full Vulkan SDK for linking.")
+            endif()
+        elseif(UNIX)
+            find_library(VULKAN_LIBRARY vulkan)
+            if(VULKAN_LIBRARY)
+                target_link_libraries(NexusCore PUBLIC ${VULKAN_LIBRARY})
+            endif()
+        endif()
+    endif()
+endif()
+
+if(NEXUS_OPENGL_ENABLED)
+    target_link_libraries(NexusCore PUBLIC OpenGL::GL)
+endif()
+
 target_compile_definitions(NexusCore
     PUBLIC
         NEXUS_STATIC_BUILD
@@ -91,6 +128,10 @@ target_compile_definitions(NexusCore
         $<$<BOOL:${NEXUS_FMOD_ENABLED}>:NEXUS_FMOD_ENABLED>
         $<$<BOOL:${NEXUS_ASSIMP_ENABLED}>:NEXUS_ASSIMP_ENABLED>
         $<$<BOOL:${NEXUS_IMGUI_ENABLED}>:NEXUS_IMGUI_ENABLED>
+        $<$<BOOL:${NEXUS_SDL2_ENABLED}>:NEXUS_SDL2_ENABLED>
+        $<$<BOOL:${NEXUS_VULKAN_ENABLED}>:NEXUS_VULKAN_ENABLED>
+        $<$<BOOL:${NEXUS_OPENGL_ENABLED}>:NEXUS_OPENGL_ENABLED>
+        $<$<BOOL:${NEXUS_DIRECTX11_ENABLED}>:NEXUS_DIRECTX11_ENABLED>
         $<$<BOOL:${NEXUS_ADVANCED_RENDERING_ENABLED}>:NEXUS_ADVANCED_RENDERING_ENABLED>
         $<$<BOOL:${NEXUS_RAY_TRACING_ENABLED}>:NEXUS_RAY_TRACING_ENABLED>
         $<$<BOOL:${NEXUS_VR_ENABLED}>:NEXUS_VR_ENABLED>
