@@ -436,3 +436,5 @@ dist/
 .env.local
 local.properties
 cmake_local.cmake
+.claude
+.vscode

@@ -20,15 +20,15 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Setup Dependencies
-      run: |
-        .\setup_dependencies.bat
-      shell: cmd
-
     - name: Install Vulkan SDK
       run: |
         choco install vulkan-sdk -y
       shell: powershell
+
+    - name: Setup Dependencies
+      run: |
+        .\setup_dependencies.bat
+      shell: cmd
 
     - name: Configure CMake
       run: |
@@ -123,6 +123,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     - name: Check File Formatting
       run: |
@@ -131,7 +133,7 @@ jobs:
 
     - name: Check Build Configuration
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_VULKAN=OFF -DENABLE_DIRECTX11=OFF -DENABLE_OPENGL=OFF || true
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_VULKAN=OFF -DENABLE_DIRECTX11=OFF -DENABLE_OPENGL=OFF
         echo "Verified CMake configuration works with all APIs disabled"
 
   documentation:
@@ -152,7 +154,7 @@ jobs:
     - name: Validate Markdown
       uses: DavidAnson/markdownlint-cli2-action@v16
       with:
-        globs: '*.md'
+        globs: '**/*.md'
       continue-on-error: true
 
   create-release:
