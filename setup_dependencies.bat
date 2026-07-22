@@ -75,11 +75,11 @@ if defined VULKAN_SDK (
 
 if !VULKAN_SDK_FOUND! equ 0 (
     echo   WARNING: Vulkan SDK not found in system
-    echo
+    echo.
     echo   For full Vulkan development support, please install:
     echo   https://vulkan.lunarg.com/sdk/home#windows
-    echo
-    echo   Downloading Vulkan headers only (no validation layers)...
+    echo.
+    echo   Downloading Vulkan headers only ^(no validation layers^)...
 
     set VULKAN_HEADERS_URL=https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.3.290.zip
     set VULKAN_ZIP=%DOWNLOADS_DIR%\vulkan-headers.zip
@@ -158,4 +158,4 @@ if !ALL_OK! equ 1 (
 )
 echo ========================================
 
-pause
+if not defined CI pause
