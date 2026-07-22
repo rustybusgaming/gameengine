@@ -9,7 +9,7 @@
 #endif
 
 #ifdef NEXUS_DIRECTX11_ENABLED
-// #include "RHI/D3D11/D3D11Device.h"
+#include "RHI/D3D11/D3D11Device.h"
 #endif
 
 #include "Logger.h"
@@ -56,9 +56,7 @@ std::unique_ptr<RHIDevice> RHIDevice::Create(GraphicsAPI api) {
         case GraphicsAPI::DirectX11:
             #ifdef NEXUS_DIRECTX11_ENABLED
             Logger::Info("Creating DirectX 11 RHI Device");
-            // return std::make_unique<D3D11Device>();
-            Logger::Error("DirectX 11 backend not yet refactored to RHI");
-            return nullptr;
+            return std::make_unique<D3D11Device>();
             #else
             Logger::Error("DirectX 11 support not compiled in");
             return nullptr;

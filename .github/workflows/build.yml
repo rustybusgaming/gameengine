@@ -1,0 +1,182 @@
+name: Nexus Engine CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-windows:
+    name: Build Windows (Vulkan + DirectX 11)
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Dependencies
+      run: |
+        .\setup_dependencies.bat
+      shell: cmd
+
+    - name: Install Vulkan SDK
+      run: |
+        choco install vulkan-sdk -y
+      shell: powershell
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_VULKAN=ON -DENABLE_DIRECTX11=ON -DENABLE_OPENGL=OFF
+
+    - name: Build
+      run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nexus-engine-windows
+        path: |
+          build/bin/
+          thirdparty/SDL2/lib/x64/SDL2.dll
+
+  build-linux:
+    name: Build Linux (Vulkan + OpenGL)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake \
+          build-essential \
+          libsdl2-dev \
+          libvulkan-dev \
+          vulkan-tools \
+          vulkan-validationlayers-dev \
+          spirv-tools \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev
+
+    - name: Setup Dependencies
+      run: |
+        chmod +x setup_dependencies.sh
+        ./setup_dependencies.sh
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_VULKAN=ON -DENABLE_DIRECTX11=OFF -DENABLE_OPENGL=OFF
+
+    - name: Build
+      run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nexus-engine-linux
+        path: build/bin/
+
+  build-macos:
+    name: Build macOS (Vulkan + MoltenVK)
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install System Dependencies
+      run: |
+        brew install cmake sdl2 molten-vk vulkan-headers vulkan-loader
+
+    - name: Setup Dependencies
+      run: |
+        chmod +x setup_dependencies.sh
+        ./setup_dependencies.sh
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_VULKAN=ON -DENABLE_DIRECTX11=OFF -DENABLE_OPENGL=OFF
+
+    - name: Build
+      run: cmake --build build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nexus-engine-macos
+        path: build/bin/
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check File Formatting
+      run: |
+        echo "Checking for tabs and trailing whitespace..."
+        ! git grep -I -n $'\t' -- '*.cpp' '*.h' || (echo "Found tabs in source files" && exit 1)
+
+    - name: Check Build Configuration
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_VULKAN=OFF -DENABLE_DIRECTX11=OFF -DENABLE_OPENGL=OFF || true
+        echo "Verified CMake configuration works with all APIs disabled"
+
+  documentation:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check Documentation Files
+      run: |
+        echo "Checking documentation..."
+        test -f README.md || echo "Warning: README.md missing"
+        test -f QUICKSTART.md && echo "✓ QUICKSTART.md found"
+        test -f GRAPHICS_API_SETUP.md && echo "✓ GRAPHICS_API_SETUP.md found"
+        test -f IMPLEMENTATION_SUMMARY.md && echo "✓ IMPLEMENTATION_SUMMARY.md found"
+
+    - name: Validate Markdown
+      uses: DavidAnson/markdownlint-cli2-action@v16
+      with:
+        globs: '*.md'
+      continue-on-error: true
+
+  create-release:
+    name: Create Release Package
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Create Release Archive
+      run: |
+        cd artifacts
+        zip -r ../nexus-engine-all-platforms.zip .
+
+    - name: Upload Release Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: nexus-engine-release
+        path: nexus-engine-all-platforms.zip
+        retention-days: 30

@@ -1,0 +1,66 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-test:
+    name: Quick Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libsdl2-dev libvulkan-dev
+
+    - name: Configure
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build
+      run: cmake --build build --parallel 4
+
+    - name: Check Binary Size
+      run: |
+        ls -lh build/bin/ || echo "No binaries built"
+
+  check-files:
+    name: Check Modified Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for Large Files
+      run: |
+        echo "Checking for large files..."
+        git diff --name-only origin/${{ github.base_ref }}...HEAD | while read file; do
+          if [ -f "$file" ]; then
+            size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+            if [ $size -gt 1048576 ]; then
+              echo "Warning: $file is larger than 1MB ($size bytes)"
+            fi
+          fi
+        done
+
+    - name: Check for Binary Files
+      run: |
+        echo "Checking for accidentally committed binaries..."
+        git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(exe|dll|so|dylib|a|lib|o)$' && exit 1 || echo "No binaries found"
+
+  lint:
+    name: Code Style Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check Line Endings
+      run: |
+        echo "Checking for CRLF line endings in source files..."
+        ! git grep -I --files-with-matches $'\r' -- '*.cpp' '*.h' '*.hpp' || (echo "Found CRLF line endings" && exit 1)
