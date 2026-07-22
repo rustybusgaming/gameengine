@@ -5,7 +5,7 @@
 #endif
 
 #ifdef NEXUS_OPENGL_ENABLED
-// #include "RHI/OpenGL/OpenGLDevice.h"
+#include "RHI/OpenGL/OpenGLDevice.h"
 #endif
 
 #ifdef NEXUS_DIRECTX11_ENABLED
@@ -45,9 +45,7 @@ std::unique_ptr<RHIDevice> RHIDevice::Create(GraphicsAPI api) {
         case GraphicsAPI::OpenGL:
             #ifdef NEXUS_OPENGL_ENABLED
             Logger::Info("Creating OpenGL RHI Device");
-            // return std::make_unique<OpenGLDevice>();
-            Logger::Error("OpenGL backend not yet implemented");
-            return nullptr;
+            return std::make_unique<OpenGLDevice>();
             #else
             Logger::Error("OpenGL support not compiled in");
             return nullptr;
