@@ -11,9 +11,25 @@
 
 namespace Nexus {
 
-// Type aliases for DirectX 11 compatibility
-using AIVector3 = DirectX::XMFLOAT3;
-using AIQuaternion = DirectX::XMFLOAT4;
+// Cross-platform vector types
+#ifdef _WIN32
+    #include <DirectXMath.h>
+    using AIVector3 = DirectX::XMFLOAT3;
+    using AIQuaternion = DirectX::XMFLOAT4;
+#else
+    // Linux/cross-platform vector types
+    struct AIVector3 {
+        float x, y, z;
+        AIVector3() : x(0), y(0), z(0) {}
+        AIVector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+    };
+
+    struct AIQuaternion {
+        float x, y, z, w;
+        AIQuaternion() : x(0), y(0), z(0), w(1) {}
+        AIQuaternion(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+    };
+#endif
 
 // Forward declarations
 class AIEntity;

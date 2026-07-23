@@ -7,9 +7,25 @@
 
 namespace Nexus {
 
-// Use DirectX math types consistently
-using PhysicsVector3 = DirectX::XMFLOAT3;
-using PhysicsQuaternion = DirectX::XMFLOAT4;
+// Cross-platform vector types
+#ifdef _WIN32
+    #include <DirectXMath.h>
+    using PhysicsVector3 = PhysicsVector3;
+    using PhysicsQuaternion = PhysicsQuaternion;
+#else
+    // Linux/cross-platform vector types
+    struct PhysicsVector3 {
+        float x, y, z;
+        PhysicsVector3() : x(0), y(0), z(0) {}
+        PhysicsVector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+    };
+
+    struct PhysicsQuaternion {
+        float x, y, z, w;
+        PhysicsQuaternion() : x(0), y(0), z(0), w(1) {}
+        PhysicsQuaternion(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+    };
+#endif
 
 // Physics transform structure
 struct PhysicsTransform {
@@ -44,13 +60,13 @@ struct CollisionShape {
     };
     
     Type type;
-    DirectX::XMFLOAT3 dimensions;
+    PhysicsVector3 dimensions;
     float radius;
     float height;
     
     CollisionShape() : type(Type::Box), dimensions(1.0f, 1.0f, 1.0f), radius(0.5f), height(1.0f) {}
     
-    static CollisionShape CreateBox(const DirectX::XMFLOAT3& size) {
+    static CollisionShape CreateBox(const PhysicsVector3& size) {
         CollisionShape shape;
         shape.type = Type::Box;
         shape.dimensions = size;
@@ -75,9 +91,9 @@ struct CollisionShape {
 
 // Structure for objects that can be rendered
 struct RenderObject {
-    DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT3 scale;
-    DirectX::XMFLOAT4 color;
+    PhysicsVector3 position;
+    PhysicsVector3 scale;
+    PhysicsQuaternion color;
     CollisionShape::Type shapeType;
     
     RenderObject() 
@@ -89,8 +105,8 @@ struct RenderObject {
 
 // Simple physics object for the simplified engine
 struct SimplePhysicsObject {
-    DirectX::XMFLOAT3 position;
-    DirectX::XMFLOAT3 velocity;
+    PhysicsVector3 position;
+    PhysicsVector3 velocity;
     float mass;
     
     SimplePhysicsObject()
@@ -126,7 +142,7 @@ public:
     
     // Demo functionality
     void CreatePhysicsDemo();
-    void ApplyExplosion(const DirectX::XMFLOAT3& center, float force, float radius);
+    void ApplyExplosion(const PhysicsVector3& center, float force, float radius);
     
     // Getters
     std::vector<RenderObject> GetRenderObjects() const;

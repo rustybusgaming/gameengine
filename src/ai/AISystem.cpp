@@ -44,7 +44,7 @@ std::shared_ptr<AIBehaviorTree::Node> AIBehaviorTree::CreatePatrolNode() {
         angle += 0.01f;
         if (angle > 6.28f) angle = 0.0f;
         
-        DirectX::XMFLOAT3 newPos;
+        AIVector3 newPos;
         newPos.x = position.x + std::cos(angle) * 0.1f;
         newPos.y = position.y;
         newPos.z = position.z + std::sin(angle) * 0.1f;
@@ -155,14 +155,14 @@ void AIStateMachine::Update(AIEntity* entity, float deltaTime) {
 }
 
 // AIPathfinding implementation
-std::vector<DirectX::XMFLOAT3> AIPathfinding::FindPath(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& goal) {
-    std::vector<DirectX::XMFLOAT3> path;
+std::vector<AIVector3> AIPathfinding::FindPath(const AIVector3& start, const AIVector3& goal) {
+    std::vector<AIVector3> path;
     
     // Simple straight-line path for now
     path.push_back(start);
     
     // Add intermediate points
-    DirectX::XMFLOAT3 direction;
+    AIVector3 direction;
     direction.x = goal.x - start.x;
     direction.y = goal.y - start.y;
     direction.z = goal.z - start.z;
@@ -175,7 +175,7 @@ std::vector<DirectX::XMFLOAT3> AIPathfinding::FindPath(const DirectX::XMFLOAT3& 
         
         int steps = (int)(distance / 2.0f); // 2 unit steps
         for (int i = 1; i < steps; ++i) {
-            DirectX::XMFLOAT3 waypoint;
+            AIVector3 waypoint;
             waypoint.x = start.x + direction.x * i * 2.0f;
             waypoint.y = start.y + direction.y * i * 2.0f;
             waypoint.z = start.z + direction.z * i * 2.0f;
@@ -209,7 +209,7 @@ AIPathfinding::AIPathfinding() {
     Logger::Debug("AIPathfinding: Initialized");
 }
 
-void AIEntity::Initialize(const DirectX::XMFLOAT3& position) {
+void AIEntity::Initialize(const AIVector3& position) {
     position_ = position;
     
     // Initialize AI systems
@@ -315,8 +315,8 @@ void AIEntity::Update(float deltaTime) {
 void AIEntity::UpdateMovement(float deltaTime) {
     if (currentPath_.empty()) return;
     
-    DirectX::XMFLOAT3 target = currentPath_[0];
-    DirectX::XMFLOAT3 direction;
+    AIVector3 target = currentPath_[0];
+    AIVector3 direction;
     direction.x = target.x - position_.x;
     direction.y = target.y - position_.y;
     direction.z = target.z - position_.z;
@@ -341,7 +341,7 @@ void AIEntity::UpdateMovement(float deltaTime) {
     }
 }
 
-void AIEntity::MoveTo(const DirectX::XMFLOAT3& target) {
+void AIEntity::MoveTo(const AIVector3& target) {
     if (pathfinding_) {
         currentPath_ = pathfinding_->FindPath(position_, target);
     }
