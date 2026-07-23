@@ -524,8 +524,8 @@ void LightingEngine::RemoveLight(std::shared_ptr<Light> light) {
 
 void LightingEngine::UpdateLight(int lightId, const Light& light) {
     for (auto& existingLight : lights_) {
-        if (existingLight.id == lightId) {
-            existingLight = light;
+        if (existingLight->id == lightId) {
+            *existingLight = light;
             break;
         }
     }
