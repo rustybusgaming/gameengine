@@ -20,7 +20,7 @@ set(THIRD_PARTY_DIR "${NEXUS_THIRD_PARTY_DIR}")
 
 option(ENABLE_PYTHON "Enable Python scripting support" ON)
 option(ENABLE_LUA "Enable Lua scripting support" ON)
-option(ENABLE_BULLET_PHYSICS "Enable Bullet Physics" ON)
+option(ENABLE_JOLT_PHYSICS "Enable Jolt Physics" ON)
 option(ENABLE_PHYSX "Enable NVIDIA PhysX" OFF)
 option(ENABLE_FMOD "Enable FMOD audio" OFF)
 option(ENABLE_IMGUI "Enable ImGui for debugging UI" ON)
@@ -105,48 +105,43 @@ endif()
 
 find_package(DirectX QUIET)
 
-set(BULLET_FOUND FALSE)
-if(ENABLE_BULLET_PHYSICS)
-    set(BULLET_SEARCH_PATHS
-        "${THIRD_PARTY_DIR}/bullet3"
-        "${THIRD_PARTY_DIR}/bullet"
-        "${CMAKE_SOURCE_DIR}/third_party/bullet3"
-        "${CMAKE_SOURCE_DIR}/third_party/bullet"
-        "$ENV{BULLET_ROOT}"
-        "C:/Program Files/bullet3"
-        "C:/bullet3"
+set(JOLT_FOUND FALSE)
+if(ENABLE_JOLT_PHYSICS)
+    set(JOLT_SEARCH_PATHS
+        "${THIRD_PARTY_DIR}/joltphysics"
+        "${THIRD_PARTY_DIR}/JoltPhysics"
+        "${CMAKE_SOURCE_DIR}/third_party/joltphysics"
+        "${CMAKE_SOURCE_DIR}/third_party/JoltPhysics"
+        "$ENV{JOLT_ROOT}"
     )
 
-    foreach(search_path IN LISTS BULLET_SEARCH_PATHS)
-        if(search_path AND EXISTS "${search_path}/CMakeLists.txt")
-            set(BULLET_ROOT "${search_path}")
+    foreach(search_path IN LISTS JOLT_SEARCH_PATHS)
+        if(search_path AND EXISTS "${search_path}/Build/CMakeLists.txt")
+            set(JOLT_ROOT "${search_path}")
             break()
         endif()
     endforeach()
 
-    if(BULLET_ROOT)
-        message(STATUS "Found Bullet Physics at: ${BULLET_ROOT}")
+    if(JOLT_ROOT)
+        message(STATUS "Found Jolt Physics at: ${JOLT_ROOT}")
 
-        set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "Build Bullet2 demos" FORCE)
-        set(BUILD_BULLET3 OFF CACHE BOOL "Build Bullet3 demos" FORCE)
-        set(BUILD_EXTRAS OFF CACHE BOOL "Build Bullet extras" FORCE)
-        set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "Build Bullet OpenGL demos" FORCE)
-        set(BUILD_UNIT_TESTS OFF CACHE BOOL "Build Bullet unit tests" FORCE)
-        set(BUILD_CPU_DEMOS OFF CACHE BOOL "Build Bullet CPU demos" FORCE)
-        set(INSTALL_LIBS OFF CACHE BOOL "Install Bullet libraries" FORCE)
+        set(TARGET_UNIT_TESTS OFF CACHE BOOL "Build Jolt unit tests" FORCE)
+        set(TARGET_HELLO_WORLD OFF CACHE BOOL "Build Jolt hello world" FORCE)
+        set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "Build Jolt performance test" FORCE)
+        set(TARGET_SAMPLES OFF CACHE BOOL "Build Jolt samples" FORCE)
+        set(TARGET_VIEWER OFF CACHE BOOL "Build Jolt viewer" FORCE)
+        set(INTERPROCEDURAL_OPTIMIZATION OFF CACHE BOOL "Enable IPO for Jolt" FORCE)
+        set(CROSS_PLATFORM_DETERMINISTIC ON CACHE BOOL "Cross-platform deterministic Jolt" FORCE)
 
-        if(NOT TARGET BulletDynamics)
-            add_subdirectory("${BULLET_ROOT}" "${CMAKE_BINARY_DIR}/thirdparty/bullet3" EXCLUDE_FROM_ALL)
+        if(NOT TARGET Jolt)
+            add_subdirectory("${JOLT_ROOT}/Build" "${CMAKE_BINARY_DIR}/thirdparty/jolt" EXCLUDE_FROM_ALL)
         endif()
 
-        set(BULLET_FOUND TRUE)
-        set(BULLET_INCLUDE_DIRS "${BULLET_ROOT}")
-        if(EXISTS "${BULLET_ROOT}/src")
-            list(APPEND BULLET_INCLUDE_DIRS "${BULLET_ROOT}/src")
-        endif()
-        set(BULLET_LIBRARIES BulletDynamics BulletCollision LinearMath)
+        set(JOLT_FOUND TRUE)
+        set(JOLT_INCLUDE_DIRS "${JOLT_ROOT}")
+        set(JOLT_LIBRARIES Jolt)
     else()
-        message(STATUS "Bullet Physics not found - using basic physics")
+        message(STATUS "Jolt Physics not found - using basic physics")
     endif()
 endif()
 
@@ -441,9 +436,9 @@ if(ENABLE_LUA AND LUA_FOUND)
     set(NEXUS_LUA_ENABLED TRUE)
 endif()
 
-set(NEXUS_BULLET_PHYSICS_ENABLED FALSE)
-if(ENABLE_BULLET_PHYSICS AND BULLET_FOUND)
-    set(NEXUS_BULLET_PHYSICS_ENABLED TRUE)
+set(NEXUS_JOLT_PHYSICS_ENABLED FALSE)
+if(ENABLE_JOLT_PHYSICS AND JOLT_FOUND)
+    set(NEXUS_JOLT_PHYSICS_ENABLED TRUE)
 endif()
 
 set(NEXUS_PHYSX_ENABLED ${PHYSX_FOUND})
@@ -516,7 +511,7 @@ message(STATUS "Lua support: ${NEXUS_LUA_ENABLED}")
 if(NEXUS_LUA_ENABLED AND LUA_VERSION_STRING)
     message(STATUS "  Lua version: ${LUA_VERSION_STRING}")
 endif()
-message(STATUS "Bullet Physics: ${NEXUS_BULLET_PHYSICS_ENABLED}")
+message(STATUS "Jolt Physics: ${NEXUS_JOLT_PHYSICS_ENABLED}")
 message(STATUS "NVIDIA PhysX: ${NEXUS_PHYSX_ENABLED}")
 message(STATUS "FMOD Audio: ${NEXUS_FMOD_ENABLED}")
 message(STATUS "Assimp: ${NEXUS_ASSIMP_ENABLED}")

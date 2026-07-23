@@ -39,9 +39,9 @@ target_include_directories(NexusCore
         ${NEXUS_THIRD_PARTY_INCLUDE_DIRS}
 )
 
-if(BULLET_FOUND)
-    target_include_directories(NexusCore PUBLIC ${BULLET_INCLUDE_DIRS})
-    target_link_libraries(NexusCore PUBLIC ${BULLET_LIBRARIES})
+if(JOLT_FOUND)
+    target_include_directories(NexusCore PUBLIC ${JOLT_INCLUDE_DIRS})
+    target_link_libraries(NexusCore PUBLIC ${JOLT_LIBRARIES})
 endif()
 
 if(NEXUS_LUA_ENABLED)
@@ -127,7 +127,7 @@ target_compile_definitions(NexusCore
         NEXUS_STATIC_BUILD
         $<$<BOOL:${NEXUS_PYTHON_ENABLED}>:NEXUS_PYTHON_ENABLED>
         $<$<BOOL:${NEXUS_LUA_ENABLED}>:NEXUS_LUA_ENABLED>
-        $<$<BOOL:${NEXUS_BULLET_PHYSICS_ENABLED}>:NEXUS_BULLET_PHYSICS_ENABLED>
+        $<$<BOOL:${NEXUS_JOLT_PHYSICS_ENABLED}>:NEXUS_JOLT_PHYSICS_ENABLED>
         $<$<BOOL:${NEXUS_PHYSX_ENABLED}>:NEXUS_PHYSX_ENABLED>
         $<$<BOOL:${NEXUS_FMOD_ENABLED}>:NEXUS_FMOD_ENABLED>
         $<$<BOOL:${NEXUS_ASSIMP_ENABLED}>:NEXUS_ASSIMP_ENABLED>

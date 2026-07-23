@@ -19,7 +19,7 @@
 // Feature flags - configured by CMake
 #cmakedefine NEXUS_PYTHON_ENABLED
 #cmakedefine NEXUS_LUA_ENABLED
-#cmakedefine NEXUS_BULLET_PHYSICS_ENABLED
+#cmakedefine NEXUS_JOLT_PHYSICS_ENABLED
 #cmakedefine NEXUS_PHYSX_ENABLED
 #cmakedefine NEXUS_FMOD_ENABLED
 #cmakedefine NEXUS_ASSIMP_ENABLED
