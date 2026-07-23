@@ -107,7 +107,7 @@ void LightingEngine::Shutdown() {
     
     // Release shadow maps
     for (auto& shadowMap : shadowMaps_) {
-        DestroyShadowMap(shadowMap);
+        DestroyShadowMap(shadowMap.second);
     }
     shadowMaps_.clear();
     
@@ -461,7 +461,7 @@ void LightingEngine::PerformDeferredLightingPass() {
     
     // Perform lighting calculations for each light
     for (const auto& light : lights_) {
-        RenderLight(light);
+        RenderLight(*light);
     }
 }
 
