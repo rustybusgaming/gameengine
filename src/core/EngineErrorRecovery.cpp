@@ -435,3 +435,5 @@ bool EngineErrorRecovery::FixTextureLoadingError() {
     Logger::Warning("Texture loading auto-fix not yet implemented");
     return false;
 }
+
+} // namespace Nexus

@@ -663,8 +663,8 @@ std::string UnityImporter::ConvertCSharpToLua(const std::string& csharpCode) {
     code = std::regex_replace(code, std::regex("Vector3"), "vector3");
     
     luaCode += code;
-    luaCode += "\n\nreturn " + "ScriptClass"; // Placeholder for actual class name
-    
+    luaCode += "\n\nreturn ScriptClass"; // Placeholder for actual class name
+
     return luaCode;
 }
 

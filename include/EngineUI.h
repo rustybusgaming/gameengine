@@ -112,6 +112,12 @@ private:
     void UpdateEngineStatus();
     void ProcessConsoleCommand(const std::string& command);
     void ExportDiagnostics();
+
+    // Modern UI functions
+    void RenderModernWelcomeScreen();
+    void RenderModernDashboard();
+    void UpdateMetrics();
+    void AddLog(const std::string& message);
     
     Engine* engine_;
     ID3D11Device* device_;

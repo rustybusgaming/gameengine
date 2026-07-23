@@ -93,8 +93,7 @@ void ModernProgressBar(float progress, const char* label, const ImVec4& color = 
             ImGui::GetColorU32(color),
             ImGui::GetColorU32(gradient_end),
             ImGui::GetColorU32(gradient_end),
-            ImGui::GetColorU32(color),
-            6.0f
+            ImGui::GetColorU32(color)
         );
 
         // Glow effect
@@ -223,7 +222,7 @@ void EngineUI::Shutdown() {
     if (imguiContext_) {
         ImGui_ImplDX11_Shutdown();
         ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext(imguiContext_);
+        ImGui::DestroyContext(static_cast<ImGuiContext*>(imguiContext_));
         imguiContext_ = nullptr;
     }
 

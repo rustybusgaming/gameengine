@@ -11,7 +11,9 @@
 #include <sstream>
 #include <regex>
 #include <filesystem>
-#include <yaml-cpp/yaml.h> // For Unity YAML parsing
+
+// TODO: Add yaml-cpp dependency for full Unity YAML parsing support
+// #include <yaml-cpp/yaml.h>
 
 namespace fs = std::filesystem;
 

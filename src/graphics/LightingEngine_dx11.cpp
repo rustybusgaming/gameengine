@@ -481,9 +481,9 @@ void LightingEngine::ApplyBloomEffect() {
     // Clear bloom render target
     float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     context_->ClearRenderTargetView(bloomSurface_, clearColor);
-    
+
     // Bind scene texture as input
-    context_->PSSetShaderResources(0, 1, &sceneSurface_);
+    context_->PSSetShaderResources(0, 1, &sceneSRV_);
     
     // Apply bloom shader (placeholder)
     // This would render a full-screen quad with bloom shader
@@ -496,9 +496,9 @@ void LightingEngine::ApplyHeatHazeEffect() {
     // Clear heat haze render target
     float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     context_->ClearRenderTargetView(heatHazeSurface_, clearColor);
-    
+
     // Bind scene texture as input
-    context_->PSSetShaderResources(0, 1, &sceneSurface_);
+    context_->PSSetShaderResources(0, 1, &sceneSRV_);
     
     // Apply heat haze shader (placeholder)
     // This would render a full-screen quad with heat haze distortion shader
@@ -524,7 +524,7 @@ void LightingEngine::RemoveLight(std::shared_ptr<Light> light) {
 
 void LightingEngine::UpdateLight(int lightId, const Light& light) {
     for (auto& existingLight : lights_) {
-        if (existingLight->id == lightId) {
+        if (existingLight->GetId() == lightId) {
             *existingLight = light;
             break;
         }
@@ -619,8 +619,19 @@ void LightingEngine::CreateShadowMap(int lightId, int size) {
     // Initialize matrices
     shadowMap.lightViewMatrix = XMMatrixIdentity();
     shadowMap.lightProjectionMatrix = XMMatrixIdentity();
-    
-    shadowMaps_.push_back(shadowMap);
+
+    // Find the light with this ID and add to map
+    Light* lightPtr = nullptr;
+    for (auto& light : lights_) {
+        if (light->GetId() == lightId) {
+            lightPtr = light.get();
+            break;
+        }
+    }
+
+    if (lightPtr) {
+        shadowMaps_[lightPtr] = shadowMap;
+    }
 }
 
 void LightingEngine::DestroyShadowMap(ShadowMap& shadowMap) {
@@ -649,26 +660,22 @@ void LightingEngine::DestroyShadowMap(ShadowMap& shadowMap) {
 void LightingEngine::UpdateSelfShadowMaps() {
     // Update self-shadowing shadow maps
     // This is a placeholder implementation
-    for (auto& shadowMap : shadowMaps_) {
+    for (auto& pair : shadowMaps_) {
         // Render to shadow map
-        context_->OMSetRenderTargets(1, &shadowMap.renderTargetView, shadowMap.depthStencilView);
-        
+        context_->OMSetRenderTargets(1, &pair.second.renderTargetView, pair.second.depthStencilView);
+
         // Clear shadow map
         float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        context_->ClearRenderTargetView(shadowMap.renderTargetView, clearColor);
-        context_->ClearDepthStencilView(shadowMap.depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-        
+        context_->ClearRenderTargetView(pair.second.renderTargetView, clearColor);
+        context_->ClearDepthStencilView(pair.second.depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
         // Render scene from light's perspective
         // This would be implemented based on the specific rendering pipeline
     }
 }
 
-void LightingEngine::SetSettings(const LightingSettings& settings) {
+void LightingEngine::SetLightingSettings(const LightingSettings& settings) {
     settings_ = settings;
-}
-
-LightingSettings LightingEngine::GetSettings() const {
-    return settings_;
 }
 
 } // namespace Nexus
