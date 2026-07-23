@@ -51,8 +51,12 @@ bool EngineUI::Initialize(Engine* engine, ID3D11Device* device, ID3D11DeviceCont
         
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        #ifdef ImGuiConfigFlags_DockingEnable
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        #endif
+        #ifdef ImGuiConfigFlags_ViewportsEnable
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        #endif
         
         // Setup ImGui style
         ApplyTheme();
@@ -125,43 +129,52 @@ void EngineUI::Render() {
     // Main menu bar
     RenderMainMenuBar();
     
-    // Create dockspace
+    // Create dockspace (if docking is available)
+    #ifdef ImGuiConfigFlags_DockingEnable
     static bool opt_fullscreen = true;
     static bool opt_padding = false;
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-    
+
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
     if (opt_fullscreen) {
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
+        #ifdef ImGuiViewport_ID
         ImGui::SetNextWindowViewport(viewport->ID);
+        #endif
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     }
-    
+
+    #ifdef ImGuiDockNodeFlags_PassthruCentralNode
     if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
         window_flags |= ImGuiWindowFlags_NoBackground;
-    
+    #endif
+
     if (!opt_padding)
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    
+
     ImGui::Begin("NexusEngine DockSpace", nullptr, window_flags);
-    
+
     if (!opt_padding)
         ImGui::PopStyleVar();
-    
+
     if (opt_fullscreen)
         ImGui::PopStyleVar(2);
-    
+
     // DockSpace
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
         ImGuiID dockspace_id = ImGui::GetID("NexusEngineDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
+    #else
+    // Fallback for non-docking ImGui
+    ImGui::Begin("NexusEngine", nullptr, ImGuiWindowFlags_MenuBar);
+    #endif
     
     // Render panels
     if (showQuickActionsPanel_) RenderQuickActionsPanel();
@@ -191,10 +204,12 @@ void EngineUI::EndFrame() {
     
     // Update and Render additional Platform Windows
     ImGuiIO& io = ImGui::GetIO();
+    #ifdef ImGuiConfigFlags_ViewportsEnable
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
+    #endif
 }
 
 void EngineUI::RenderMainMenuBar() {
