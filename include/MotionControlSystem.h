@@ -545,8 +545,8 @@ private:
 
     bool InitializeKinect();
     bool InitializeGestureRecognition();
-    void InitializeMotionTracking();
-    void UpdateBodyTracking();
+    bool InitializeMotionTracking();
+    bool UpdateBodyTracking();
     void UpdateGestureRecognition(float deltaTime);
     void UpdateMotionAiming(float deltaTime);
     void UpdateMotionControls(float deltaTime);
@@ -565,6 +565,9 @@ private:
     void UpdateInteractionControls();
     void HandleTrackingLoss();
     bool ValidateJointPositions(const std::vector<DirectX::XMFLOAT3>& joints);
+    void UpdateCalibration(float deltaTime);
+    void InitializeSkeletalConstraints();
+    void ApplySkeletalConstraints();
 
 private:
     std::map<std::string, MotionDevice> devices_;
@@ -661,6 +664,8 @@ private:
         int windowSize;
         std::vector<DirectX::XMFLOAT3> history;
         std::vector<DirectX::XMFLOAT3> positions;
+        std::vector<DirectX::XMFLOAT3> velocities;
+        std::vector<float> timestamps;
         std::vector<float> weights;
         DirectX::XMFLOAT3 filteredValue;
     };

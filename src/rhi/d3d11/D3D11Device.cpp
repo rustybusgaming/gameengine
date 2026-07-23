@@ -5,12 +5,7 @@
 #include "RHI/D3D11/D3D11CommandBuffer.h"
 #include "Logger.h"
 
-#ifdef NEXUS_SDL2_ENABLED
-    #include <SDL2/SDL.h>
-    #include <SDL2/SDL_syswm.h>
-#else
-    #include <Windows.h>
-#endif
+#include <Windows.h>
 
 namespace Nexus {
 namespace RHI {

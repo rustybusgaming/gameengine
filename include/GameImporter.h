@@ -187,6 +187,9 @@ public:
     static bool ParsePrefabFile(const std::string& prefabFile, UnityGameObject& prefab);
     static std::string ConvertCSharpToLua(const std::string& csharpCode);
     static std::string ConvertCSharpToCpp(const std::string& csharpCode);
+
+private:
+    static std::shared_ptr<UnityGameObject> ParseUnityGameObject(const std::string& yamlDoc);
 };
 
 /**

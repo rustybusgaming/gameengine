@@ -50,6 +50,8 @@ public:
         std::string lastWarning;
         int totalErrors = 0;
         int totalWarnings = 0;
+        std::string graphicsAPI = "DirectX 11";
+        std::string audioSystem = "XAudio2";
     };
 
 public:
@@ -116,7 +118,7 @@ private:
     // Modern UI functions
     void RenderModernWelcomeScreen();
     void RenderModernDashboard();
-    void UpdateMetrics();
+    void UpdateMetrics(float fps, float frameTime);
     void AddLog(const std::string& message);
     
     Engine* engine_;

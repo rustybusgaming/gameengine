@@ -327,7 +327,7 @@ void Engine::Update(float deltaTime) {
     
     // Update UI
     if (ui_) {
-        ui_->Update(deltaTime);
+        // UI updates happen during Render() phase
     }
     
     // Update error recovery
