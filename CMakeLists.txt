@@ -37,9 +37,11 @@ option(NEXUS_BUILD_TOOLS "Build Nexus command-line tools" ON)
 
 option(ENABLE_VULKAN "Enable Vulkan rendering backend" ON)
 option(ENABLE_OPENGL "Enable OpenGL rendering backend" ON)
+option(ENABLE_DIRECTX9 "Enable DirectX 9 rendering backend" ON)
+option(ENABLE_DIRECTX10 "Enable DirectX 10 rendering backend" ON)
 option(ENABLE_DIRECTX11 "Enable DirectX 11 rendering backend" ON)
-set(NEXUS_DEFAULT_GRAPHICS_API "Vulkan" CACHE STRING "Default graphics API (Vulkan, OpenGL, DirectX11)")
-set_property(CACHE NEXUS_DEFAULT_GRAPHICS_API PROPERTY STRINGS "Vulkan" "OpenGL" "DirectX11")
+set(NEXUS_DEFAULT_GRAPHICS_API "Vulkan" CACHE STRING "Default graphics API (Vulkan, OpenGL, DirectX9, DirectX10, DirectX11)")
+set_property(CACHE NEXUS_DEFAULT_GRAPHICS_API PROPERTY STRINGS "Vulkan" "OpenGL" "DirectX9" "DirectX10" "DirectX11")
 
 set(NEXUS_THIRD_PARTY_INCLUDE_DIRS)
 
@@ -462,6 +464,16 @@ endif()
 set(NEXUS_OPENGL_ENABLED FALSE)
 if(ENABLE_OPENGL AND OPENGL_FOUND)
     set(NEXUS_OPENGL_ENABLED TRUE)
+endif()
+
+set(NEXUS_DIRECTX9_ENABLED FALSE)
+if(ENABLE_DIRECTX9 AND WIN32)
+    set(NEXUS_DIRECTX9_ENABLED TRUE)
+endif()
+
+set(NEXUS_DIRECTX10_ENABLED FALSE)
+if(ENABLE_DIRECTX10 AND WIN32)
+    set(NEXUS_DIRECTX10_ENABLED TRUE)
 endif()
 
 set(NEXUS_DIRECTX11_ENABLED FALSE)
