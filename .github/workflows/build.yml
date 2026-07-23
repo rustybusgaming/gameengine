@@ -34,14 +34,21 @@ jobs:
 
     - name: Setup Dependencies
       run: |
-        if (Test-Path "scripts\setup\setup_dependencies.bat") {
-          cd scripts\setup
-          .\setup_dependencies.bat
-        } else {
-          Write-Host "Setup script not found, skipping..."
-        }
+        # SDL2
+        $SDL2_VERSION = "2.30.5"
+        $SDL2_URL = "https://github.com/libsdl-org/SDL/releases/download/release-$SDL2_VERSION/SDL2-devel-$SDL2_VERSION-VC.zip"
+        $SDL2_ZIP = "$env:TEMP\SDL2.zip"
+
+        Write-Host "Downloading SDL2..."
+        Invoke-WebRequest -Uri $SDL2_URL -OutFile $SDL2_ZIP
+
+        Write-Host "Extracting SDL2..."
+        Expand-Archive -Path $SDL2_ZIP -DestinationPath "$env:TEMP\SDL2-temp" -Force
+        New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\thirdparty\SDL2"
+        Move-Item -Path "$env:TEMP\SDL2-temp\SDL2-$SDL2_VERSION\*" -Destination "${{ github.workspace }}\thirdparty\SDL2" -Force
+
+        Write-Host "SDL2 setup complete"
       shell: powershell
-      continue-on-error: true
 
     - name: Install Python Dependencies
       run: |
@@ -249,7 +256,7 @@ jobs:
           -DENABLE_OPENGL=OFF \
           -DENABLE_PYTHON=OFF \
           -DENABLE_LUA=OFF \
-          -DENABLE_BULLET_PHYSICS=OFF \
+          -DENABLE_JOLT_PHYSICS=ON \
           -DENABLE_EXAMPLES=OFF
         echo "✓ CMake configuration successful"
 
