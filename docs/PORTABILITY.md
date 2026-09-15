@@ -79,11 +79,22 @@ Direct3D 11, DirectInput, XAudio2, the Kinect SDK or Win32 windowing directly �
 not through a typedef, but as real API calls — so they can only be compiled
 against the Windows SDK:
 
-`Engine.cpp`, `EngineErrorRecovery.cpp`, `NexusC.cpp`, `GraphicsDevice.cpp`,
-`Texture.cpp`, `Shader.cpp`, `Mesh.cpp`, `TextRenderer.cpp`,
-`LightingEngine.cpp`, `AnimationSystem.cpp`, `ResourceManager.cpp`,
-`InputManager.cpp`, `AudioSystem.cpp`, `MotionControlSystem.cpp`,
-`EngineUI.cpp`, `EngineUI_Modern.cpp`, `GameImporterUI.cpp`.
+`GraphicsDevice.cpp`, `Texture.cpp`, `Shader.cpp`, `Mesh.cpp`,
+`TextRenderer.cpp`, `LightingEngine.cpp`, `AnimationSystem.cpp`,
+`ResourceManager.cpp`, `InputManager.cpp`, `AudioSystem.cpp`,
+`MotionControlSystem.cpp`, `EngineUI.cpp`, `EngineUI_Modern.cpp`,
+`GameImporterUI.cpp`.
+
+`Engine.cpp`, `EngineErrorRecovery.cpp`, `NexusC.cpp` and `main.cpp` are in that
+same list but are a different case: they are **portable source**. Window
+creation, the window procedure and the message loop moved out of `Engine` and
+into `Platform::CreateGameWindow` / `ProcessMessages`, which is where the
+per-platform detail belongs — the window is the platform's, not the engine's.
+What still pins them to Windows is only that they *call* the Direct3D 11
+subsystems above, so they cannot be linked elsewhere yet. They are compiled on
+every platform anyway by the `NexusEngineCoreCompileCheck` target in
+`tests/CMakeLists.txt`, and simply never linked, so they cannot quietly drift
+back into Windows-only code.
 
 This is the pre-RHI renderer. The cross-platform path forward is the RHI
 abstraction under `include/RHI/` and `src/rhi/`, which already has Vulkan and
@@ -93,7 +104,7 @@ library, the tools and the tests.
 
 ## Guarding against regression
 
-Two things keep this from quietly reverting:
+Four things keep this from quietly reverting:
 
 1. **The test suite** (`ctest --test-dir build --output-on-failure`) runs on
    Windows, Linux and macOS in CI, and covers the math conventions, the ECS, the
@@ -107,6 +118,17 @@ Two things keep this from quietly reverting:
    because they need third-party SDKs this repository does not ship
    (`PhysXEngine.h` needs PhysX; `AdvancedPhysicsEngine.h` needs Bullet); both
    now fail with an explicit `#error` naming the missing dependency.
+
+3. **The combined-header check** compiles every public header into a *single*
+   translation unit. Compiling headers one at a time cannot see a conflict
+   *between* two of them, which is its own bug class: `Nexus::AudioSystem`,
+   `Nexus::ParticleSystem` and `Nexus::AISystem` were each declared twice, with
+   different definitions, so any translation unit that included both headers
+   failed to compile. The ECS-side systems in `Systems.h` are now
+   `AudioUpdateSystem`, `ParticleUpdateSystem` and `AIBehaviorSystem`.
+
+4. **The engine-core compile check** builds the portable-source-but-not-yet-
+   linkable translation units described above on Linux and macOS.
 
 ## Building on Linux
 

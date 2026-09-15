@@ -160,8 +160,12 @@ private:
     ECS* ecs_ = nullptr;
 };
 
-// Simple AI System - basic AI behaviors
-class AISystem : public System {
+// Simple AI Behaviour System - basic AI behaviors.
+//
+// Named AIBehaviorSystem because AISystem.h already publishes
+// `using AISystem = AIManager`, and a class cannot share a name with an
+// existing alias in the same namespace.
+class AIBehaviorSystem : public System {
 public:
     void Update(float deltaTime) override {
         for (auto entity : entities) {
@@ -257,8 +261,13 @@ private:
     }
 };
 
-// Particle Update System - updates particle emitters
-class ParticleSystem : public System {
+// Particle Update System - updates particle emitters.
+//
+// Named ParticleUpdateSystem, not ParticleSystem: ParticleSystem.h already
+// defines a Nexus::ParticleSystem - the renderer-side emitter pool - and two
+// different classes cannot share a name in one namespace. This is the ECS
+// system that drives those emitters from component data.
+class ParticleUpdateSystem : public System {
 public:
     void Update(float deltaTime) override {
         for (auto entity : entities) {
@@ -277,8 +286,12 @@ private:
     ECS* ecs_ = nullptr;
 };
 
-// Audio System - updates 3D audio sources
-class AudioSystem : public System {
+// Audio Update System - updates 3D audio sources.
+//
+// Named AudioUpdateSystem for the same reason as ParticleUpdateSystem above:
+// AudioSystem.h defines the Nexus::AudioSystem mixer that actually owns voices
+// and buffers. This drives it from AudioSourceComponent/AudioListenerComponent.
+class AudioUpdateSystem : public System {
 public:
     void Update(float deltaTime) override {
         Entity listenerEntity = NULL_ENTITY;

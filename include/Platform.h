@@ -82,11 +82,17 @@
     typedef XMMATRIX D3DXMATRIX;
     typedef XMFLOAT4 D3DXQUATERNION;
 
-    typedef void* WindowHandle;
-    typedef void* InstanceHandle;
+    // Spelled as the Win32 handle types rather than void*, so a WindowHandle is
+    // the same type on every platform and can be passed to the subsystem
+    // Initialize() overloads that take an HWND without a per-platform cast.
+    // compat/win32 declares these as distinct incomplete struct pointers, so
+    // they still do not interchange with each other.
+    typedef HWND WindowHandle;
+    typedef HINSTANCE InstanceHandle;
 #endif
 
 // Standard library includes
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
@@ -110,9 +116,31 @@ public:
     static void SetConsoleMode(bool enabled);
     
     // Window management
+    //
+    // The window belongs to the platform layer, not to Engine. Engine used to
+    // register its own window class and run its own message loop inline, which
+    // is what kept the engine core Windows-only even though every other part of
+    // it was portable.
+
+    /// Creates a window whose *client area* is width x height, and shows it.
+    /// Returns nullptr on failure, or on a platform with no window backend.
     static WindowHandle CreateGameWindow(const std::string& title, int width, int height);
     static void DestroyGameWindow(WindowHandle window);
+
+    /// Drains the host message queue. Returns false once the application has
+    /// been asked to quit.
     static bool ProcessMessages();
+
+    /// Signature of a native-message observer: returns true if it consumed the
+    /// message. Parameters are the native message triple, widened to integer
+    /// types so this declaration needs no Win32 message types.
+    using WindowMessageHook = bool (*)(WindowHandle window, unsigned int message,
+                                       std::uintptr_t wParam, std::intptr_t lParam);
+
+    /// Installs a hook that gets first look at every native window message.
+    /// The UI layer uses this to feed ImGui's Win32 backend. Pass nullptr to
+    /// remove it. No-op where there is no native message queue.
+    static void SetWindowMessageHook(WindowMessageHook hook);
     
     // Timing
     static double GetTime();

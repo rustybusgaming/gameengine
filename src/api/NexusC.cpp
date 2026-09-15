@@ -25,14 +25,9 @@ struct NexusCallbacks {
 static std::map<NexusEngine*, std::unique_ptr<NexusCallbacks>> s_callbacks;
 
 // Helper functions
-static XMFLOAT3 ToXMFloat3(NexusVector3 v) {
-    return XMFLOAT3(v.x, v.y, v.z);
-}
-
-static NexusVector3 FromXMFloat3(const XMFLOAT3& v) {
-    return {v.x, v.y, v.z};
-}
-
+//
+// The NexusVector3 conversions that used to sit here were never called: the
+// nexus_vector3_* functions below operate on the plain C struct directly.
 static XMFLOAT4 ToXMFloat4(NexusColor c) {
     return XMFLOAT4(c.r, c.g, c.b, c.a);
 }

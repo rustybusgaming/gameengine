@@ -381,10 +381,17 @@ int main(int argc, char* argv[]) {
         std::cout << "🚀 INITIALIZING ENGINE...\n";
         auto startTime = std::chrono::high_resolution_clock::now();
 
-        // Initialize with custom config if provided
-        bool initSuccess = args.configFile.empty() ?
-            engine.Initialize() :
-            engine.Initialize(args.configFile);
+        // --resolution and --fullscreen were parsed and then dropped on the
+        // floor: Initialize() took only a config path, so the window was always
+        // created at the default size. InitParams carries them through now.
+        Nexus::InitParams initParams;
+        initParams.configFile = args.configFile;
+        initParams.width      = args.windowWidth;
+        initParams.height     = args.windowHeight;
+        initParams.fullscreen = args.fullscreen;
+        initParams.title      = std::string("Nexus Engine ") + ENGINE_VERSION;
+
+        bool initSuccess = engine.Initialize(initParams);
 
         if (!initSuccess) {
             std::cerr << "❌ Failed to initialize Nexus Engine!\n";
