@@ -7,9 +7,13 @@
 
 #include "ECS.h"
 #include "Components.h"
+#include "FrameClock.h"
 #include "Timer.h"
 #include "Platform.h"
 
+#include <chrono>
+#include <cstdint>
+#include <limits>
 #include <set>
 #include <thread>
 
@@ -211,6 +215,148 @@ NEXUS_TEST(TransformRotationIsInDegrees) {
     CHECK_NEAR(DirectX::XMVectorGetY(v), 1.0f, kEps);
 }
 
+// --- FrameClock ------------------------------------------------------------
+//
+// The engine's main loop used to read its delta time from a timer it had just
+// reset, so every frame advanced the simulation by a few microseconds no
+// matter how long the frame actually took. These pin down the timing policy
+// without any test having to sleep.
+
+NEXUS_TEST(FrameClockStartsAtZero) {
+    const FrameClock clock;
+
+    CHECK_NEAR(clock.GetDeltaTime(), 0.0f, kEps);
+    CHECK_EQ(clock.GetFPS(), 0);
+    CHECK_EQ(clock.GetFrameCount(), std::uint64_t{0});
+}
+
+NEXUS_TEST(FrameClockReportsTheDeltaItWasGiven) {
+    FrameClock clock;
+
+    clock.Advance(0.016f);
+    CHECK_NEAR(clock.GetDeltaTime(), 0.016f, kEps);
+
+    clock.Advance(0.033f);
+    CHECK_NEAR(clock.GetDeltaTime(), 0.033f, kEps);
+
+    CHECK_EQ(clock.GetFrameCount(), std::uint64_t{2});
+}
+
+NEXUS_TEST(FrameClockClampsALongStallSoPhysicsStaysSimulable) {
+    FrameClock clock;
+    clock.SetMaxDeltaTime(0.1f);
+
+    // A five-second stall - a breakpoint, or a window being dragged.
+    clock.Advance(5.0f);
+
+    CHECK_NEAR(clock.GetDeltaTime(), 0.1f, kEps);
+}
+
+NEXUS_TEST(FrameClockTreatsNegativeAndNonFiniteDeltasAsZero) {
+    FrameClock clock;
+
+    clock.Advance(-1.0f);
+    CHECK_NEAR(clock.GetDeltaTime(), 0.0f, kEps);
+
+    clock.Advance(std::numeric_limits<float>::quiet_NaN());
+    CHECK_NEAR(clock.GetDeltaTime(), 0.0f, kEps);
+}
+
+NEXUS_TEST(FrameClockCountsFPSOverAOneSecondWindow) {
+    FrameClock clock;
+
+    // 1/64 is exactly representable in binary floating point, so 64 of them
+    // accumulate to exactly 1.0 and the window closes on the 64th frame.
+    // 1/60 is not, and sums to a hair under a second.
+    for (int i = 0; i < 64; ++i) {
+        clock.Advance(1.0f / 64.0f);
+    }
+
+    CHECK_EQ(clock.GetFPS(), 64);
+    CHECK_EQ(clock.GetFrameCount(), std::uint64_t{64});
+}
+
+NEXUS_TEST(FrameClockFPSIsZeroBeforeTheFirstFullSecond) {
+    FrameClock clock;
+
+    for (int i = 0; i < 10; ++i) {
+        clock.Advance(1.0f / 60.0f);   // ~0.17s total
+    }
+
+    CHECK_EQ(clock.GetFPS(), 0);
+}
+
+NEXUS_TEST(FrameClockFPSTracksAChangeInRate) {
+    FrameClock clock;
+
+    for (int i = 0; i < 64; ++i) {
+        clock.Advance(1.0f / 64.0f);
+    }
+    CHECK_EQ(clock.GetFPS(), 64);
+
+    // Now run a second of slower frames; the window should re-measure.
+    for (int i = 0; i < 32; ++i) {
+        clock.Advance(1.0f / 32.0f);
+    }
+    CHECK_EQ(clock.GetFPS(), 32);
+}
+
+NEXUS_TEST(FrameClockSleepsForTheRemainderOfTheFrameBudget) {
+    FrameClock clock(60.0f);   // 16.67ms budget
+
+    // A frame whose work took 6ms leaves ~10ms.
+    CHECK_EQ(clock.GetSleepMilliseconds(0.006f), 10);
+}
+
+NEXUS_TEST(FrameClockDoesNotSleepWhenTheFrameOverran) {
+    FrameClock clock(60.0f);
+
+    CHECK_EQ(clock.GetSleepMilliseconds(0.020f), 0);
+    CHECK_EQ(clock.GetSleepMilliseconds(1.0f), 0);
+}
+
+NEXUS_TEST(FrameClockDoesNotSleepWhenUncapped) {
+    FrameClock clock;
+    CHECK_NEAR(clock.GetTargetFPS(), 0.0f, kEps);
+    CHECK_EQ(clock.GetSleepMilliseconds(0.001f), 0);
+
+    // A non-positive target means "uncapped", and must never divide by zero.
+    clock.SetTargetFPS(-30.0f);
+    CHECK_NEAR(clock.GetTargetFPS(), 0.0f, kEps);
+    CHECK_EQ(clock.GetSleepMilliseconds(0.001f), 0);
+}
+
+NEXUS_TEST(FrameClockResetClearsStateButKeepsConfiguration) {
+    FrameClock clock(60.0f);
+    clock.SetMaxDeltaTime(0.1f);
+
+    for (int i = 0; i < 64; ++i) {
+        clock.Advance(1.0f / 64.0f);
+    }
+    CHECK_EQ(clock.GetFPS(), 64);
+
+    clock.Reset();
+
+    CHECK_EQ(clock.GetFPS(), 0);
+    CHECK_EQ(clock.GetFrameCount(), std::uint64_t{0});
+    CHECK_NEAR(clock.GetDeltaTime(), 0.0f, kEps);
+    CHECK_NEAR(clock.GetTargetFPS(), 60.0f, kEps);
+    CHECK_NEAR(clock.GetMaxDeltaTime(), 0.1f, kEps);
+}
+
+NEXUS_TEST(FrameClockDrivenByTheTimerSeesARealInterval) {
+    // Ties FrameClock back to the clock the engine actually feeds it with:
+    // Timer::Tick(), not the reset-then-read that produced a ~0 delta.
+    FrameClock clock;
+    Timer timer;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    clock.Advance(timer.Tick());
+
+    CHECK(clock.GetDeltaTime() >= 0.015f);
+    CHECK(clock.GetDeltaTime() < 1.0f);
+}
+
 // --- Timer -----------------------------------------------------------------
 
 NEXUS_TEST(TimerStartsNearZero) {
@@ -326,6 +472,19 @@ int main() {
     RUN_TEST(DefaultTransformIsIdentity);
     RUN_TEST(TransformAppliesScaleThenRotationThenTranslation);
     RUN_TEST(TransformRotationIsInDegrees);
+
+    RUN_TEST(FrameClockStartsAtZero);
+    RUN_TEST(FrameClockReportsTheDeltaItWasGiven);
+    RUN_TEST(FrameClockClampsALongStallSoPhysicsStaysSimulable);
+    RUN_TEST(FrameClockTreatsNegativeAndNonFiniteDeltasAsZero);
+    RUN_TEST(FrameClockCountsFPSOverAOneSecondWindow);
+    RUN_TEST(FrameClockFPSIsZeroBeforeTheFirstFullSecond);
+    RUN_TEST(FrameClockFPSTracksAChangeInRate);
+    RUN_TEST(FrameClockSleepsForTheRemainderOfTheFrameBudget);
+    RUN_TEST(FrameClockDoesNotSleepWhenTheFrameOverran);
+    RUN_TEST(FrameClockDoesNotSleepWhenUncapped);
+    RUN_TEST(FrameClockResetClearsStateButKeepsConfiguration);
+    RUN_TEST(FrameClockDrivenByTheTimerSeesARealInterval);
 
     RUN_TEST(TimerStartsNearZero);
     RUN_TEST(TimerAdvancesMonotonically);

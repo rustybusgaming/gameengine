@@ -4,8 +4,9 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include <Windows.h>
 
+#include "FrameClock.h"
+#include "Platform.h"     // WindowHandle, and the window/message-pump API.
 #include "TextRenderer.h"
 
 namespace Nexus {
@@ -43,6 +44,13 @@ public:
     ~Engine();
 
     // Core lifecycle
+
+    /// Initialises every subsystem against a window of the requested size.
+    /// Safe to call twice; the second call is a no-op returning true.
+    bool Initialize(const InitParams& params);
+
+    /// Convenience overload: default window settings, optionally with a config
+    /// file. Equivalent to filling in InitParams::configFile and nothing else.
     bool Initialize(const std::string& configFile = "");
     void Run();
     void Shutdown();
@@ -68,18 +76,46 @@ public:
     EngineErrorRecovery* GetErrorRecovery() const { return errorRecovery_.get(); }
 
     // Frame control
-    void SetTargetFPS(float fps) { targetFPS_ = fps; }
-    int GetFPS(); // Remove const since method modifies member variables
-    float GetDeltaTime() const { return deltaTime_; }
+
+    /// Caps the main loop; 0 or below runs uncapped.
+    void SetTargetFPS(float fps) { frameClock_.SetTargetFPS(fps); }
+    float GetTargetFPS() const { return frameClock_.GetTargetFPS(); }
+
+    /// Frames per second over the last completed second, 0 before then.
+    int GetFPS() const { return frameClock_.GetFPS(); }
+    float GetDeltaTime() const { return frameClock_.GetDeltaTime(); }
 
     // State
-    bool IsRunning() const { return isRunning_; }
-    void RequestExit() { isRunning_ = false; }
+    bool IsInitialized() const { return initialized_; }
+
+    /// True once Initialize() has succeeded and until an exit is requested or
+    /// Shutdown() runs.
+    ///
+    /// Derived rather than stored: it used to be a flag set only inside Run(),
+    /// so the hand-written loops in the C API and main_debug.cpp - which drive
+    /// the engine themselves rather than calling Run() - tested it straight
+    /// after Initialize(), found it false, and never executed a single frame.
+    bool IsRunning() const { return initialized_ && !shouldExit_; }
+
+    /// Asks the main loop to stop at the end of the current frame. Safe to
+    /// call from a subsystem mid-frame: the frame still completes, so nothing
+    /// tears down underneath code that is still running.
+    void RequestExit() { shouldExit_ = true; }
+
+    /// The engine's window, or nullptr before Initialize().
+    WindowHandle GetWindow() const { return window_; }
 
 private:
     void Update(float deltaTime);
     void Render();
-    void SafeShutdown();
+
+    /// Shutdown() that cannot throw, for use from the destructor.
+    void SafeShutdown() noexcept;
+
+    /// Constructs any subsystem that is not already allocated. Called from the
+    /// constructor and again from Initialize(), so an Initialize() following a
+    /// Shutdown() brings the engine back up instead of dereferencing null.
+    void CreateSubsystems();
     
     // Core subsystems
     std::unique_ptr<GraphicsDevice> graphics_;
@@ -103,32 +139,33 @@ private:
     std::unique_ptr<EngineErrorRecovery> errorRecovery_;
 
     // Window and initialization
-    HWND hwnd_;
-    int width_;
-    int height_;
-    bool fullscreen_;
-    std::string windowClass_;
+    //
+    // Every member here carries a default initialiser. width_, height_,
+    // fullscreen_ and the frame-rate target were previously absent from the
+    // constructor's initialiser list and then read by Initialize(), so the
+    // window was created at an indeterminate size.
+    WindowHandle window_ = nullptr;
+    int width_ = 1280;
+    int height_ = 720;
+    bool fullscreen_ = false;
+    std::string title_ = "Nexus Engine";
 
     // Engine state
-    bool initialized_;
-    bool isRunning_;
-    bool shouldExit_;
-    bool recoveringFromError_;
-    float targetFPS_;
-    float deltaTime_;
-    
+    bool initialized_ = false;
+    bool shouldExit_ = false;
+    bool recoveringFromError_ = false;
+
+    /// Delta time, FPS and frame pacing. Owns what were loose members plus a
+    /// function-local static inside GetFPS().
+    FrameClock frameClock_{60.0f};
+
     // Performance stats
-    struct {
-        float frameTime;
-        float updateTime;
-        float renderTime;
-        int memoryUsage;
+    struct PerfStats {
+        float frameTime = 0.0f;
+        float updateTime = 0.0f;
+        float renderTime = 0.0f;
+        int memoryUsage = 0;
     } perfStats_;
-    
-    // FPS calculation
-    std::chrono::high_resolution_clock::time_point lastFPSUpdate_;
-    int frameCount_;
-    float timeAccumulator_;
 };
 
 } // namespace Nexus

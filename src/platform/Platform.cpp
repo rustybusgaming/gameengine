@@ -181,23 +181,164 @@ std::string Platform::GetExecutablePath() {
 
 // --- Window management ------------------------------------------------------
 //
-// Window creation is genuinely platform-specific and there is no cross-platform
-// windowing backend wired up yet (SDL2 is optional and not required to build).
-// Rather than pretend, these report failure clearly on platforms without an
-// implementation so callers fail fast instead of dereferencing a null handle.
+// Window ownership lives here rather than in Engine. Engine previously
+// registered its own window class, ran its own WindowProc and called
+// DestroyWindow/UnregisterClass inline, which is the only reason the engine
+// core could not be compiled off Windows - every other line in it is portable.
+
+namespace {
+
+/// First-look observer for native messages; see Platform::SetWindowMessageHook.
+Platform::WindowMessageHook g_messageHook = nullptr;
+
+#if defined(_WIN32)
+
+constexpr const char* kWindowClassName = "NexusEngineWindow";
+
+/// Live windows created through CreateGameWindow. The class is registered on
+/// the first and unregistered after the last, so repeated
+/// Initialize/Shutdown cycles in one process do not leak a class registration
+/// or fail on a duplicate one.
+int g_windowCount = 0;
+bool g_classRegistered = false;
+
+LRESULT CALLBACK NexusWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (g_messageHook &&
+        g_messageHook(hwnd, static_cast<unsigned int>(message),
+                      static_cast<std::uintptr_t>(wParam),
+                      static_cast<std::intptr_t>(lParam))) {
+        return 0;
+    }
+
+    switch (message) {
+        case WM_CLOSE:
+            // Ask the loop to stop rather than destroying the window from
+            // under the renderer; teardown runs in Engine::Shutdown.
+            PostQuitMessage(0);
+            return 0;
+
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+
+        default:
+            break;
+    }
+
+    return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+bool EnsureWindowClass() {
+    if (g_classRegistered) {
+        return true;
+    }
+
+    WNDCLASSEXA wc = {};
+    wc.cbSize        = sizeof(WNDCLASSEXA);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc   = NexusWindowProc;
+    wc.hInstance     = GetModuleHandleA(nullptr);
+    wc.hIcon         = LoadIcon(nullptr, IDI_APPLICATION);
+    wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    wc.lpszClassName = kWindowClassName;
+
+    if (RegisterClassExA(&wc) == 0) {
+        Logger::Error("Failed to register window class '" + std::string(kWindowClassName) + "'");
+        return false;
+    }
+
+    g_classRegistered = true;
+    return true;
+}
+
+#endif // _WIN32
+
+} // namespace
+
+void Platform::SetWindowMessageHook(WindowMessageHook hook) {
+    g_messageHook = hook;
+}
 
 WindowHandle Platform::CreateGameWindow(const std::string& title, int width, int height) {
-    (void)title;
-    (void)width;
-    (void)height;
+    if (width <= 0 || height <= 0) {
+        Logger::Error("CreateGameWindow: invalid size " + std::to_string(width) + "x" +
+                      std::to_string(height));
+        return nullptr;
+    }
 
+#if defined(_WIN32)
+    if (!EnsureWindowClass()) {
+        return nullptr;
+    }
+
+    // width/height describe the client area - the region the swap chain is
+    // sized against. Passing them straight to CreateWindowEx would size the
+    // whole window instead, leaving a client area smaller than the back buffer
+    // and a permanently rescaled image.
+    const DWORD style = WS_OVERLAPPEDWINDOW;
+    RECT rect = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
+    if (!AdjustWindowRect(&rect, style, FALSE)) {
+        Logger::Warning("AdjustWindowRect failed; falling back to an unadjusted window size");
+        rect = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
+    }
+
+    HWND hwnd = CreateWindowExA(
+        0,
+        kWindowClassName,
+        title.c_str(),
+        style,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        rect.right - rect.left,
+        rect.bottom - rect.top,
+        nullptr, nullptr,
+        GetModuleHandleA(nullptr),
+        nullptr);
+
+    if (hwnd == nullptr) {
+        Logger::Error("Failed to create window '" + title + "'");
+        if (g_windowCount == 0 && g_classRegistered) {
+            UnregisterClassA(kWindowClassName, GetModuleHandleA(nullptr));
+            g_classRegistered = false;
+        }
+        return nullptr;
+    }
+
+    ++g_windowCount;
+    ShowWindow(hwnd, SW_SHOW);
+    UpdateWindow(hwnd);
+    return hwnd;
+
+#else
+    // There is no cross-platform windowing backend wired up yet. Reporting
+    // failure clearly beats handing back a placeholder handle that the
+    // renderer would only fail on later, further from the cause.
+    (void)title;
     Logger::Error("Platform::CreateGameWindow is not implemented on " + GetPlatformName() +
-                  " - build with SDL2 support or use a platform-specific window backend");
+                  " - no windowing backend is compiled in");
     return nullptr;
+#endif
 }
 
 void Platform::DestroyGameWindow(WindowHandle window) {
-    (void)window;
+    if (window == nullptr) {
+        return;
+    }
+
+#if defined(_WIN32)
+    DestroyWindow(window);
+
+    if (g_windowCount > 0) {
+        --g_windowCount;
+    }
+
+    // Unregister only once the last window is gone: the class is process-wide
+    // and unregistering it while another window still uses it would fail.
+    if (g_windowCount == 0 && g_classRegistered) {
+        UnregisterClassA(kWindowClassName, GetModuleHandleA(nullptr));
+        g_classRegistered = false;
+    }
+#endif
 }
 
 bool Platform::ProcessMessages() {

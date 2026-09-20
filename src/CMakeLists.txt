@@ -18,8 +18,14 @@ set(NEXUS_EXCLUDED_SOURCES)
 # Everything not listed here builds on every platform, which is what lets the
 # core library and its tests run in CI on Linux.
 # ---------------------------------------------------------------------------
+#
+# The first three are a different case from the rest: they are portable source
+# and are compiled on every platform by tests/CMakeLists.txt
+# (NexusEngineCoreCompileCheck). They are excluded from NexusCore here only
+# because they *call* the Direct3D 11 subsystems below, so they cannot be
+# linked until those are ported.
 set(NEXUS_WINDOWS_ONLY_SOURCES
-    core/Engine.cpp                 # Win32 window creation and message loop
+    core/Engine.cpp                 # calls the D3D11 subsystems; compiles anywhere
     core/EngineErrorRecovery.cpp    # depends on Engine
     api/NexusC.cpp                  # C API over Engine
     graphics/GraphicsDevice.cpp     # Direct3D 11 device and swap chain
